@@ -18,7 +18,7 @@
     "prepare": "npm run compile",
     "pretest": "npm run compile",
     "posttest": "npm run check",
-    "run": "node_modules/.bin/ts-node src/index.ts"
+    "run": "npx ts-node src/index.ts"
   },
   "devDependencies": {
     "@types/node": "^13.11.1",
