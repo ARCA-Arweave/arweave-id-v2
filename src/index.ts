@@ -1,3 +1,4 @@
 import { retrieveArweaveIdV1fromAddress } from './arweaveID';
 
-export = retrieveArweaveIdV1fromAddress;
+export = { retrieveArweaveIdV1fromAddress };
+
