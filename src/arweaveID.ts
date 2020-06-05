@@ -10,7 +10,7 @@ export interface ArweaveId {
     avatarDataUri?: string
 }
 
-export async function retrieveArweaveIdV1fromAddress(address: string, arweaveInstance: Arweave): Promise<ArweaveId> {
+export async function retrieveArweaveIdV1fromAddress(address: string, arweaveInstance: Arweave): Promise<ArweaveId | string> {
     var query =
         `query { transactions(from:["${address}"],tags: [{name:"App-Name", value:"arweave-id"},{name:"Type", value:"name"}]) {id}}`;
     return axios
@@ -20,8 +20,9 @@ export async function retrieveArweaveIdV1fromAddress(address: string, arweaveIns
             return arweaveInstance.transactions.getData(res.data.data.transactions[0].id as string, { decode: true, string: true })}
             )
         .then(function(arweaveName) {
-            let id = {name: arweaveName as any};
+            let id = {name: arweaveName as string};
             return id;    
         })
+        .catch(err => `Error: ${err}`)
 }
 
