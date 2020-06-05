@@ -1,5 +1,6 @@
 import Arweave from 'arweave/node';
 import axios from 'axios';
+import jwkInterface from 'json-schema';
 
 export interface ArweaveId {
     name: string
