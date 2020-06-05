@@ -29,8 +29,33 @@ export async function retrieveArweaveIdV1fromAddress(address: string, arweaveIns
 
 export async function setArweaveData(arweaveIdData: ArweaveId, jwk: string, arweaveInstance: Arweave ): Promise<string> {
     let key = JSON.parse(jwk);
-    let mediaType = arweaveIdData.avatarDataUri? arweaveIdData.avatarDataUri.split(';')[0].split(':')[1] : 'Unknown/type';
-    let avatarData = arweaveIdData.avatarDataUri? arweaveIdData.avatarDataUri.split(',')[1] : 'Put identicon here';
+    var mediaType;
+    var avatarData;
+    switch (arweaveIdData.avatarDataUri?.split(':')[0]){
+        // If dataURI format, check for optional mediat type or note unknown
+        case 'data': mediaType = arweaveIdData.avatarDataUri? arweaveIdData.avatarDataUri.split(';')[0].split(':')[1] : 'Unknown/type'; 
+                    avatarData = arweaveIdData.avatarDataUri.split(',')[1];
+                    break;
+        // If URL is detected, throw error
+        case 'http':
+        case 'https': throw('Remote images not supported');  
+        // TODO: If no URI provided, insert fallback avatar 
+        case undefined: mediaType = 'text/plain'; 
+        avatarData = "Insert identicon here";
+        break;
+        // If not recognizable format, assume URI is Arweave txn and check for a valid transaction and insert transaction string into data field.  
+        default: let txnStatus = await arweaveInstance.transactions.getStatus(arweaveIdData.avatarDataUri as string);
+                if (txnStatus.status === 200) {
+                    mediaType = 'arweave/transaction';
+                    avatarData = arweaveIdData.avatarDataUri;
+                }
+                // TODO: If provided URI is not valid arweave txn ID, insert fallback avatar
+                else {
+                    mediaType = 'text/plain';
+                    avatarData = "Insert identicon here";
+                }
+    }
+
     let transaction = await arweaveInstance.createTransaction({data:avatarData}, key);
     transaction.addTag('App-Name','arweave-id');
     transaction.addTag('App-Version','0.0.2');
@@ -48,10 +73,12 @@ export async function setArweaveData(arweaveIdData: ArweaveId, jwk: string, arwe
     if (arweaveIdData.discord !== undefined){
         transaction.addTag('discord',arweaveIdData.discord);
     }
+
     await arweaveInstance.transactions.sign(transaction, key);
     
     console.log('Transaction verified: ' + await arweaveInstance.transactions.verify(transaction));
     console.log('Transaction id is ' +transaction.id);
+
     return transaction.id;
 }
 
