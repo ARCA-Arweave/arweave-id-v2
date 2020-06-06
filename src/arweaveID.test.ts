@@ -13,6 +13,7 @@ describe('Test arweaveID.ts functions',()=>{
 
 	it('retrieveArweaveIdV1fromAddress gets a wallet\'s name', async () => {
 		expect(1)
+		let address = await arweave.wallets.jwkToAddress(jwk)
 		let res = await ArweaveID.retrieveArweaveIdV1fromAddress('v2XXwq_FvVqH2KR4p_x8H-SQ7rDwZBbykSv-59__Avc', arweave)
 
 		expect(res).toEqual({"name": "RosMcMahon"})
@@ -20,7 +21,7 @@ describe('Test arweaveID.ts functions',()=>{
 	it('setArweaveData returns a new transaction id', async () => {
 		expect(1)
 		let aridData: ArweaveID.ArweaveId = {
-			name: 'RosMcMahon'
+			name: 'RosMcMahon2'
 		}
 
 		let res = await ArweaveID.setArweaveData(aridData,jwk,arweave)

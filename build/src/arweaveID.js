@@ -77,6 +77,7 @@ async function setArweaveData(arweaveIdData, jwk, arweaveInstance) {
     await arweaveInstance.transactions.sign(transaction, jwk);
     console.log('Transaction verified: ' + await arweaveInstance.transactions.verify(transaction));
     console.log('Transaction id is ' + transaction.id);
+    const res = await arweaveInstance.transactions.post(transaction);
     return transaction.id;
 }
 exports.setArweaveData = setArweaveData;

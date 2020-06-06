@@ -1,7 +1,7 @@
 // import Arweave from 'arweave/node';
 import IArweave from './types/IArweave';
-import axios from 'axios';
 import { JWKInterface } from './types/JwkInterface';
+import axios from 'axios';
 const toUint8Array = require('base64-to-uint8array')
 
 export interface ArweaveId {
@@ -20,8 +20,8 @@ export async function retrieveArweaveIdV1fromAddress(address: string, arweaveIns
 		.post(`${arweaveInstance.api.config.protocol}://${arweaveInstance.api.config.host}:${arweaveInstance.api.config.port}/arql`
 			, { query: query })
 		.then(function(res) {
-			return arweaveInstance.transactions.getData(res.data.data.transactions[0].id as string, { decode: true, string: true })}
-			)
+			return arweaveInstance.transactions.getData(res.data.data.transactions[0].id as string, { decode: true, string: true })
+		})
 		.then(function(arweaveName) {
 			let id = {name: arweaveName as string};
 			return id;
@@ -88,6 +88,7 @@ export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface
 	console.log('Transaction verified: ' + await arweaveInstance.transactions.verify(transaction));
 	console.log('Transaction id is ' +transaction.id);
 
+	const res = await arweaveInstance.transactions.post(transaction)
 
 
 	return transaction.id;
