@@ -105,3 +105,6 @@ dist
 
 # Local hackery
 example
+
+# confidential stuff
+secrets/
