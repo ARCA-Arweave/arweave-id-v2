@@ -1,6 +1,6 @@
 {
-  "name": "",
-  "version": "0.0.0",
+  "name": "arweave-id",
+  "version": "0.1.0",
   "description": "",
   "main": "build/src/index.js",
   "types": "build/src/index.d.ts",
@@ -10,7 +10,7 @@
   "license": "Apache-2.0",
   "keywords": [],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest --watchAll",
     "check": "gts check",
     "clean": "gts clean",
     "compile": "tsc",
@@ -21,13 +21,17 @@
     "run": "npx ts-node src/index.ts"
   },
   "devDependencies": {
+    "@types/jest": "^25.2.3",
     "@types/node": "^13.11.1",
     "gts": "^2.0.2",
+    "jest": "^26.0.1",
+    "ts-jest": "^26.1.0",
     "ts-node": "^8.10.2",
-    "typescript": "^3.8.3"
+    "typescript": "^3.9.5"
   },
   "dependencies": {
     "arweave": "^1.7.1",
-    "axios": "^0.19.2"
+    "axios": "^0.18.0",
+    "base64-to-uint8array": "^1.0.0"
   }
 }
