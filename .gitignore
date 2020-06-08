@@ -108,3 +108,6 @@ example
 
 # confidential stuff
 secrets/
+
+# build crap
+build/src

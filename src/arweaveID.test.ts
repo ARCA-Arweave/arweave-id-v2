@@ -1,6 +1,6 @@
 import * as ArweaveID from './arweaveID'
 import Arweave from 'arweave/node'
-import jwk from './secrets/jwk.json'
+//import jwk from './secrets/jwk.json'
 
 describe('Test arweaveID.ts functions',()=>{
 	const arweave = Arweave.init({
@@ -11,15 +11,30 @@ describe('Test arweaveID.ts functions',()=>{
     logging: false,     // Enable network request logging
 })
 
-	it('retrieveArweaveIdV1fromAddress gets a wallet\'s name', async () => {
+	it('retrieveArweaveIdfromAddress gets a wallet\'s name for an account with a V2 ID', async () => {
 		expect(1)
-		let address = await arweave.wallets.jwkToAddress(jwk)
-		let res = await ArweaveID.retrieveArweaveIdV1fromAddress('v2XXwq_FvVqH2KR4p_x8H-SQ7rDwZBbykSv-59__Avc', arweave)
 
-		expect(res).toEqual({"name": "RosMcMahon"})
+		let res = await ArweaveID.retrieveArweaveIdfromAddress('v2XXwq_FvVqH2KR4p_x8H-SQ7rDwZBbykSv-59__Avc', arweave)
+
+		expect(res).toEqual({"name": "RosMcMahon2"})
 	})
+	it('retrieveArweaveIdfromAddress gets a wallet\'s name with a V1 ID', async () => {
+		expect(1)
+
+		let res = await ArweaveID.retrieveArweaveIdfromAddress('ovNqyRqs9ue4pCzc6SiLQ8UMxxLagnoTpR1LUeEstU8', arweave)
+
+		expect(res).toEqual({"name": "clemente"})
+	})
+	it('retrieveArweaveIdfromAddress gets a wallet\'s discord name with a V1 ID', async () => {
+		expect(1)
+
+		let res = await ArweaveID.retrieveArweaveIdfromAddress('CvbdmU66JFe5D14j2wYZEFSfO1hZY8dZy4W-9Ev2q0Y', arweave)
+
+		expect(res).toEqual({ "name": 'sparrow', "discord": 'Sparrow#2791' })
+	})/*
 	it('setArweaveData returns a new transaction id', async () => {
 		expect(1)
+		let address = await arweave.wallets.jwkToAddress(jwk)
 		let aridData: ArweaveID.ArweaveId = {
 			name: 'RosMcMahon2'
 		}
@@ -27,7 +42,7 @@ describe('Test arweaveID.ts functions',()=>{
 		let res = await ArweaveID.setArweaveData(aridData,jwk,arweave)
 
 		expect(res).toMatch(/\S{43}/) //<= I am just testing for a string 43 characters long here
-	})
+	})*/
 
 })
 

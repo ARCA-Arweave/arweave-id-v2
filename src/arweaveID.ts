@@ -13,20 +13,58 @@ export interface ArweaveId {
 	avatarDataUri?: string
 }
 
-export async function retrieveArweaveIdV1fromAddress(address: string, arweaveInstance: IArweave): Promise<ArweaveId | string> {
+export async function retrieveArweaveIdfromAddress(address: string, arweaveInstance: IArweave): Promise<ArweaveId | string> {
 	var query =
-		`query { transactions(from:["${address}"],tags: [{name:"App-Name", value:"arweave-id"},{name:"Type", value:"name"}]) {id}}`;
-	return axios
+		`query { transactions(from:["${address}"],tags: [{name:"App-Name", value:"arweave-id"}]) {id tags{name value}}}`;
+	var res = await axios
 		.post(`${arweaveInstance.api.config.protocol}://${arweaveInstance.api.config.host}:${arweaveInstance.api.config.port}/arql`
-			, { query: query })
-		.then(function(res) {
-			return arweaveInstance.transactions.getData(res.data.data.transactions[0].id as string, { decode: true, string: true })
-		})
-		.then(function(arweaveName) {
-			let id = {name: arweaveName as string};
-			return id;
-		})
-		.catch(err => `Error: ${err}`)
+			, { query: query });
+
+	var id: ArweaveId = { name: ''};
+	let v2Txns = res.data.data.transactions.filter(txn => txn.tags.filter(tag => tag['value'] === '0.0.2').length > 0);
+	let v1Txns = res.data.data.transactions.filter(txn => txn.tags.filter(tag => tag['value'] === '0.0.1').length > 0);
+
+	if (v2Txns.length > 0){
+		for (var j = 0; j < v2Txns[0].tags.length; j++){
+			let tag = v2Txns[0].tags[j]
+			switch(tag['name']){
+				case 'Name': id.name = tag['value']; break;
+				case 'Email': id.email = tag['value']; break;
+				case 'Ethereum': id.ethereum = tag['value']; break;
+				case 'Twitter': id.ethereum = tag['value']; break;
+				case 'Discord': id.ethereum = tag['value']; break;
+				default:
+			}
+		}
+	} else {
+		let v1NameTxns = v1Txns.filter(txn => txn.tags.filter(tag => tag['value'] === 'name').length > 0);
+		if (v1NameTxns.length > 0){
+			id.name = await arweaveInstance.transactions.getData(v1NameTxns[0].id as string, { decode: true, string: true }) as string;
+		}
+		//TODO: Decide what to do if no v2 or v1 transactions with a name are available
+	}
+	if (v2Txns.length == 0)  // Assumes that if there is a v2 transaction, it contains all the most recent data elements
+	{
+		let v1EmailTxns = v1Txns.filter(txn => txn.tags.filter(tag => tag['value'] === 'email').length > 0);
+		if (v1EmailTxns.length > 0){
+			id.email = await arweaveInstance.transactions.getData(v1EmailTxns[0].id as string, { decode: true, string: true }) as string;
+		}
+		let v1EthTxns = v1Txns.filter(txn => txn.tags.filter(tag => tag['value'] === 'ethereum').length > 0);
+		if (v1EthTxns.length > 0){
+			id.ethereum = await arweaveInstance.transactions.getData(v1EthTxns[0].id as string, { decode: true, string: true }) as string;
+		}
+		let v1TwitterTxns = v1Txns.filter(txn => txn.tags.filter(tag => tag['value'] === 'twitter').length > 0);
+		if (v1TwitterTxns.length > 0){
+			id.twitter = await arweaveInstance.transactions.getData(v1TwitterTxns[0].id as string, { decode: true, string: true }) as string;
+		}
+		let v1DiscordTxns = v1Txns.filter(txn => txn.tags.filter(tag => tag['value'] === 'discord').length > 0);
+		if (v1DiscordTxns.length > 0){
+			id.discord = await arweaveInstance.transactions.getData(v1DiscordTxns[0].id as string, { decode: true, string: true }) as string;
+		}
+	}
+	
+		
+	return id;
 }
 
 export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveInstance: IArweave ): Promise<string> {
