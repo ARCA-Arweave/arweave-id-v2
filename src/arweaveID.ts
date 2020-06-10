@@ -43,7 +43,7 @@ export async function retrieveArweaveIdfromAddress(address: string, arweaveInsta
 			//TODO: Fix this so it determines the content-type of the avatar and returns it as part of the URI
 		}
 		else {
-			id.avatarDataUri = `data:${v2Txns[0].tags['Content-Type']};base64,${await arweaveInstance.transactions.getData(v2Txns[0].id as string)}`;
+			id.avatarDataUri = `data:${v2Txns[0].tags.filter(tag => tag['name'] == 'Content-Type')[0]['value']};base64,${await arweaveInstance.transactions.getData(v2Txns[0].id as string)}`;
 		}
 		
 	} else { //If no V2 ID is found, find the most recent V1 name transaction
