@@ -32,6 +32,8 @@
   "dependencies": {
     "arweave": "^1.7.1",
     "axios": "^0.18.0",
-    "base64-to-uint8array": "^1.0.0"
+    "base64-to-uint8array": "^1.0.0",
+    "identicon.js": "^2.3.3",
+    "jshashes": "^1.0.8"
   }
 }

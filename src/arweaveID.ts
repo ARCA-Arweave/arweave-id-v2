@@ -2,6 +2,8 @@
 import IArweave from './types/IArweave';
 import { JWKInterface } from './types/JwkInterface';
 import axios from 'axios';
+import identicon from 'identicon.js';
+import Hashes from 'jshashes'
 const toUint8Array = require('base64-to-uint8array')
 
 export interface ArweaveId {
@@ -37,7 +39,7 @@ export async function retrieveArweaveIdfromAddress(address: string, arweaveInsta
 				default:
 			}
 		}
-		if (v2Txns[0].tags['Content-Type'] == 'arweave/transaction'){
+		if (v2Txns[0].tags['Content-Type'] == 'arweave/transaction') {
 			let originalAvatarTxn = await arweaveInstance.transactions.getData(v2Txns[0].id as string);
 			id.avatarDataUri = `data;base64,${await arweaveInstance.transactions.getData(originalAvatarTxn as string)}`;
 			//TODO: Fix this so it determines the content-type of the avatar and returns it as part of the URI
@@ -45,7 +47,7 @@ export async function retrieveArweaveIdfromAddress(address: string, arweaveInsta
 		else {
 			id.avatarDataUri = `data:${v2Txns[0].tags.filter(tag => tag['name'] == 'Content-Type')[0]['value']};base64,${await arweaveInstance.transactions.getData(v2Txns[0].id as string)}`;
 		}
-		
+
 	} else { //If no V2 ID is found, find the most recent V1 name transaction
 		let v1NameTxns = v1Txns.filter(txn => txn.tags.filter(tag => tag['value'] === 'name').length > 0);
 		if (v1NameTxns.length > 0) {
@@ -81,13 +83,12 @@ export async function retrieveArweaveIdfromAddress(address: string, arweaveInsta
 		}
 	}
 
-	
 	return id;
 }
 
 export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveInstance: IArweave): Promise<string> {
 	var mediaType: string
-	var avatarData: string
+	var avatarData: any
 	switch (arweaveIdData.avatarDataUri?.split(':')[0]) {
 		// If dataURI format, check for optional media type or note unknown
 		case 'data':
@@ -104,8 +105,8 @@ export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface
 			throw ('Remote images not supported');
 		// TODO: If no URI provided, insert fallback avatar
 		case undefined:
-			mediaType = 'text/plain';
-			avatarData = "Insert identicon here";
+			mediaType = 'image/png';
+			avatarData = identiconEr(arweaveIdData.name);
 			break;
 		// If not recognizable format, assume URI is Arweave txn and check for a valid transaction and insert transaction string into data field.
 		default:
@@ -116,8 +117,9 @@ export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface
 			}
 			// TODO: If provided URI is not valid arweave txn ID, insert fallback avatar
 			else {
-				mediaType = 'text/plain';
-				avatarData = "Insert identicon here";
+
+				mediaType = 'image/png';
+				avatarData = identiconEr(arweaveIdData.name);
 			}
 	}
 
@@ -150,3 +152,7 @@ export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface
 	return transaction.id;
 }
 
+function identiconEr(name: string): string {
+	const hash = Hashes.SHA256;
+	return identicon.Identicon(hash.hex(name)).toString();
+}
