@@ -3,7 +3,7 @@ import IArweave from './types/IArweave';
 import { JWKInterface } from './types/JwkInterface';
 import axios from 'axios';
 import identicon from 'identicon.js';
-import Hashes from 'jshashes'
+import { SHA256 } from 'jshashes';
 const toUint8Array = require('base64-to-uint8array')
 
 export interface ArweaveId {
@@ -148,11 +148,10 @@ export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface
 
 	const res = await arweaveInstance.transactions.post(transaction)
 
-
 	return transaction.id;
 }
 
 function identiconEr(name: string): string {
-	const hash = Hashes.SHA256;
-	return identicon.Identicon(hash.hex(name)).toString();
+	const hash = new SHA256;
+	return new identicon(hash.hex(name)).toString();
 }

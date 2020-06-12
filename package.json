@@ -30,7 +30,7 @@
     "typescript": "^3.9.5"
   },
   "dependencies": {
-    "arweave": "^1.7.1",
+    "@types/identicon.js": "^2.3.0",
     "axios": "^0.18.0",
     "base64-to-uint8array": "^1.0.0",
     "identicon.js": "^2.3.3",
