@@ -1,4 +1,4 @@
-import { retrieveArweaveIdfromAddress, setArweaveData } from './arweaveID';
+import { retrieveArweaveIdfromAddress, setArweaveData, getAddressfromArweaveID } from './arweaveID';
 
-export = { retrieveArweaveIdfromAddress, setArweaveData };
+export = { retrieveArweaveIdfromAddress, setArweaveData, getAddressfromArweaveID };
 

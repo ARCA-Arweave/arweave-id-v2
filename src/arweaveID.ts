@@ -151,6 +151,15 @@ export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface
 	return transaction.id;
 }
 
+export async function getAddressfromArweaveID(arweaveID: string, arweaveInstance: IArweave): Promise<string> {
+	const query =
+		`query { transactions(tags: [{name:"App-Name", value:"arweave-id"}, {name:"Name", value:"${arweaveID}"}]) {id tags{name value}}}`;
+	const res = await axios
+		.post(`${arweaveInstance.api.config.protocol}://${arweaveInstance.api.config.host}:${arweaveInstance.api.config.port}/arql`
+			, { query: query });	
+	const nameTxn = await arweaveInstance.transactions.get(res.data.data.transactions[res.data.data.transactions.length-1].id)
+	return arweaveInstance.wallets.ownerToAddress(nameTxn.owner);
+}
 function identiconEr(name: string): string {
 	const hash = new SHA256;
 	return new identicon(hash.hex(name)).toString();

@@ -74,7 +74,7 @@ interface Transactions {
 	// new (api: Api, crypto: CryptoInterface): Transactions
 	getTransactionAnchor(): Promise<string>
 	getPrice(byteSize: number, targetAddress?: string | undefined): Promise<string>
-	// get(id: string): Promise<Transaction>
+	get(id: string): Promise<Transaction>
 	// fromRaw(attributes: object): Transaction
 	// search(tagName: string, tagValue: string): Promise<string[]>
 	getStatus(id: string): Promise<TransactionStatusResponse>
@@ -84,10 +84,12 @@ interface Transactions {
 	post(transaction: string | object | Transaction | Buffer): Promise<AxiosResponse<any>>
 }
 
-
+interface Wallets {
+	ownerToAddress(owner: string): Promise<string>;
+}
 export default interface IArweave {
 	api: Api
-	// wallets: Wallets
+	wallets: Wallets
 	transactions: Transactions
 	// network: Network
 	// ar: Ar
