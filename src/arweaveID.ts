@@ -155,18 +155,21 @@ export async function getAddressfromArweaveID(arweaveID: string, arweaveInstance
 	const res = await axios
 		.post(`${arweaveInstance.api.config.protocol}://${arweaveInstance.api.config.host}:${arweaveInstance.api.config.port}/arql`
 			, { query: query });
-	let arweaveIDTxns = res.data.data.transactions  // Gets all transactions that claim 'arweaveID'
+	let arweaveIDTxns = res.data.data.transactions
 	if (arweaveIDTxns.length > 0){
-		var nameTxn = await arweaveInstance.transactions.get(arweaveIDTxns[arweaveIDTxns.length-1].id)  //Set owning transaction as earliest transaction by earliest blocktime
+		const nameTxn = await arweaveInstance.transactions.get(arweaveIDTxns[arweaveIDTxns.length-1].id)
 		var owner = await arweaveInstance.wallets.ownerToAddress(nameTxn.owner);
 		let ownerTxns = (await getArweaveIDTxnsForAddress(owner, arweaveInstance)).map(txn => txn.id);
-		let nameChanges = arweaveIDTxns.map(txn => txn.id).filter(txn => ownerTxns.includes(txn) == false);  // Look for any txns from a wallet other than 'owner' claiming a given arweaveID
+		let nameChanges = arweaveIDTxns.map(txn => txn.id).filter(txn => ownerTxns.includes(txn) == false);
+		console.log('name changes' + ownerTxns)
+		console.log('name claims' + nameChanges)
+		console.log(ownerTxns == arweaveIDTxns);
 		if (nameChanges.length == 0) {
-			return owner;		//If no other claimants found, assume 'owner' owns ArweaveID
+			return owner;
 		}
-		//TODO: Add logic to determine if any subsequent `nameChanges` transactions are valid
+		else return 'no owner found';
 	}
-	return '';
+	else return '';
 }
 
 function identiconEr(name: string): string {
