@@ -1,7 +1,7 @@
 // import Arweave from 'arweave/node';
 import IArweave from './types/IArweave';
 import { JWKInterface } from './types/JwkInterface';
-import axios from 'axios';
+import axios, { AxiosResponse } from 'axios';
 import identicon from 'identicon.js';
 import { SHA256 } from 'jshashes';
 const toUint8Array = require('base64-to-uint8array')
@@ -16,15 +16,13 @@ export interface ArweaveId {
 }
 
 export async function retrieveArweaveIdfromAddress(address: string, arweaveInstance: IArweave): Promise<ArweaveId | string> {
-	var query =
-		`query { transactions(from:["${address}"],tags: [{name:"App-Name", value:"arweave-id"}]) {id tags{name value}}}`;
-	var res = await axios
-		.post(`${arweaveInstance.api.config.protocol}://${arweaveInstance.api.config.host}:${arweaveInstance.api.config.port}/arql`
-			, { query: query });
+	let transactions = await getArweaveIDTxnsForAddress(address, arweaveInstance);
+	if (transactions.length == 0)
+		return '';
 
 	var id: ArweaveId = { name: '' };
-	let v2Txns = res.data.data.transactions.filter(txn => txn.tags.filter(tag => tag['value'] === '0.0.2').length > 0);
-	let v1Txns = res.data.data.transactions.filter(txn => txn.tags.filter(tag => tag['value'] === '0.0.1').length > 0);
+	let v2Txns = transactions.filter(txn => txn.tags.filter(tag => tag['value'] === '0.0.2').length > 0);
+	let v1Txns = transactions.filter(txn => txn.tags.filter(tag => tag['value'] === '0.0.1').length > 0);
 
 	// If a V2 ID is found, populate the ArweaveID tags based on the v2 transaction
 	if (v2Txns.length > 0) {
@@ -156,11 +154,34 @@ export async function getAddressfromArweaveID(arweaveID: string, arweaveInstance
 		`query { transactions(tags: [{name:"App-Name", value:"arweave-id"}, {name:"Name", value:"${arweaveID}"}]) {id tags{name value}}}`;
 	const res = await axios
 		.post(`${arweaveInstance.api.config.protocol}://${arweaveInstance.api.config.host}:${arweaveInstance.api.config.port}/arql`
-			, { query: query });	
-	const nameTxn = await arweaveInstance.transactions.get(res.data.data.transactions[res.data.data.transactions.length-1].id)
-	return arweaveInstance.wallets.ownerToAddress(nameTxn.owner);
+			, { query: query });
+	let arweaveIDTxns = res.data.data.transactions
+	if (arweaveIDTxns.length > 0){
+		const nameTxn = await arweaveInstance.transactions.get(arweaveIDTxns[arweaveIDTxns.length-1].id)
+		var owner = await arweaveInstance.wallets.ownerToAddress(nameTxn.owner);
+		let ownerTxns = (await getArweaveIDTxnsForAddress(owner, arweaveInstance)).map(txn => txn.id);
+		let nameChanges = arweaveIDTxns.map(txn => txn.id).filter(txn => ownerTxns.includes(txn) == false);
+		console.log('name changes' + ownerTxns)
+		console.log('name claims' + nameChanges)
+		console.log(ownerTxns == arweaveIDTxns);
+		if (nameChanges.length == 0) {
+			return owner;
+		}
+		else return 'no owner found';
+	}
+	else return '';
 }
+
 function identiconEr(name: string): string {
 	const hash = new SHA256;
 	return new identicon(hash.hex(name)).toString();
+}
+
+async function getArweaveIDTxnsForAddress(address: string, arweaveInstance: IArweave): Promise<any[]>{
+	var query =
+	`query { transactions(from:["${address}"],tags: [{name:"App-Name", value:"arweave-id"}]) {id tags{name value}}}`;
+	let res = await axios
+	.post(`${arweaveInstance.api.config.protocol}://${arweaveInstance.api.config.host}:${arweaveInstance.api.config.port}/arql`
+		, { query: query });
+	return res.data.data.transactions;
 }
