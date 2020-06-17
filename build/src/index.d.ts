@@ -1,6 +1,7 @@
-import { retrieveArweaveIdV1fromAddress, setArweaveData } from './arweaveID';
+import { retrieveArweaveIdfromAddress, setArweaveData, getAddressfromArweaveID } from './arweaveID';
 declare const _default: {
-    retrieveArweaveIdV1fromAddress: typeof retrieveArweaveIdV1fromAddress;
+    retrieveArweaveIdfromAddress: typeof retrieveArweaveIdfromAddress;
     setArweaveData: typeof setArweaveData;
+    getAddressfromArweaveID: typeof getAddressfromArweaveID;
 };
 export = _default;

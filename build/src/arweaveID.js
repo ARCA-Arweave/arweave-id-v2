@@ -3,23 +3,87 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.setArweaveData = exports.retrieveArweaveIdV1fromAddress = void 0;
+exports.getAddressfromArweaveID = exports.setArweaveData = exports.retrieveArweaveIdfromAddress = void 0;
 const axios_1 = __importDefault(require("axios"));
+const identicon_js_1 = __importDefault(require("identicon.js"));
+const jshashes_1 = require("jshashes");
 const toUint8Array = require('base64-to-uint8array');
-async function retrieveArweaveIdV1fromAddress(address, arweaveInstance) {
-    var query = `query { transactions(from:["${address}"],tags: [{name:"App-Name", value:"arweave-id"},{name:"Type", value:"name"}]) {id}}`;
-    return axios_1.default
-        .post(`${arweaveInstance.api.config.protocol}://${arweaveInstance.api.config.host}:${arweaveInstance.api.config.port}/arql`, { query: query })
-        .then(function (res) {
-        return arweaveInstance.transactions.getData(res.data.data.transactions[0].id, { decode: true, string: true });
-    })
-        .then(function (arweaveName) {
-        let id = { name: arweaveName };
-        return id;
-    })
-        .catch(err => `Error: ${err}`);
+async function retrieveArweaveIdfromAddress(address, arweaveInstance) {
+    let transactions = await getArweaveIDTxnsForAddress(address, arweaveInstance);
+    if (transactions.length == 0)
+        return { name: '' };
+    var id = { name: '' };
+    let v2Txns = transactions.filter(txn => txn.tags.filter(tag => tag['value'] === '0.0.2').length > 0);
+    let v1Txns = transactions.filter(txn => txn.tags.filter(tag => tag['value'] === '0.0.1').length > 0);
+    // If a V2 ID is found, populate the ArweaveID tags based on the v2 transaction
+    if (v2Txns.length > 0) {
+        for (var j = 0; j < v2Txns[0].tags.length; j++) {
+            let tag = v2Txns[0].tags[j];
+            switch (tag['name']) {
+                case 'Name':
+                    id.name = tag['value'];
+                    break;
+                case 'Email':
+                    id.email = tag['value'];
+                    break;
+                case 'Ethereum':
+                    id.ethereum = tag['value'];
+                    break;
+                case 'Twitter':
+                    id.ethereum = tag['value'];
+                    break;
+                case 'Discord':
+                    id.ethereum = tag['value'];
+                    break;
+                default:
+            }
+        }
+        if (v2Txns[0].tags['Content-Type'] == 'arweave/transaction') {
+            let originalAvatarTxn = await arweaveInstance.transactions.getData(v2Txns[0].id);
+            id.avatarDataUri = `data;base64,${await arweaveInstance.transactions.getData(originalAvatarTxn)}`;
+            //TODO: Fix this so it determines the content-type of the avatar and returns it as part of the URI
+        }
+        else {
+            id.avatarDataUri = `data:${v2Txns[0].tags.filter(tag => tag['name'] == 'Content-Type')[0]['value']};base64,${await arweaveInstance.transactions.getData(v2Txns[0].id)}`;
+        }
+    }
+    else { //If no V2 ID is found, find the most recent V1 name transaction
+        let v1NameTxns = v1Txns.filter(txn => txn.tags.filter(tag => tag['value'] === 'name').length > 0);
+        if (v1NameTxns.length > 0) {
+            id.name = await arweaveInstance.transactions.getData(v1NameTxns[0].id, { decode: true, string: true });
+        }
+        // If no name field set, set name equal to Arweave address as default
+        else
+            id.name = address;
+    }
+    // Check to see if any elements are not populated and then check to see if there are any V1 transactions corresponding to that element
+    if (id.email == undefined) {
+        let v1EmailTxns = v1Txns.filter(txn => txn.tags.filter(tag => tag['value'] === 'email').length > 0);
+        if (v1EmailTxns.length > 0) {
+            id.email = await arweaveInstance.transactions.getData(v1EmailTxns[0].id, { decode: true, string: true });
+        }
+    }
+    if (id.ethereum == undefined) {
+        let v1EthTxns = v1Txns.filter(txn => txn.tags.filter(tag => tag['value'] === 'ethereum').length > 0);
+        if (v1EthTxns.length > 0) {
+            id.ethereum = await arweaveInstance.transactions.getData(v1EthTxns[0].id, { decode: true, string: true });
+        }
+    }
+    if (id.twitter == undefined) {
+        let v1TwitterTxns = v1Txns.filter(txn => txn.tags.filter(tag => tag['value'] === 'twitter').length > 0);
+        if (v1TwitterTxns.length > 0) {
+            id.twitter = await arweaveInstance.transactions.getData(v1TwitterTxns[0].id, { decode: true, string: true });
+        }
+    }
+    if (id.discord == undefined) {
+        let v1DiscordTxns = v1Txns.filter(txn => txn.tags.filter(tag => tag['value'] === 'discord').length > 0);
+        if (v1DiscordTxns.length > 0) {
+            id.discord = await arweaveInstance.transactions.getData(v1DiscordTxns[0].id, { decode: true, string: true });
+        }
+    }
+    return id;
 }
-exports.retrieveArweaveIdV1fromAddress = retrieveArweaveIdV1fromAddress;
+exports.retrieveArweaveIdfromAddress = retrieveArweaveIdfromAddress;
 async function setArweaveData(arweaveIdData, jwk, arweaveInstance) {
     var _a;
     var mediaType;
@@ -41,8 +105,8 @@ async function setArweaveData(arweaveIdData, jwk, arweaveInstance) {
             throw ('Remote images not supported');
         // TODO: If no URI provided, insert fallback avatar
         case undefined:
-            mediaType = 'text/plain';
-            avatarData = "Insert identicon here";
+            mediaType = 'image/png';
+            avatarData = identiconEr(arweaveIdData.name);
             break;
         // If not recognizable format, assume URI is Arweave txn and check for a valid transaction and insert transaction string into data field.
         default:
@@ -53,8 +117,8 @@ async function setArweaveData(arweaveIdData, jwk, arweaveInstance) {
             }
             // TODO: If provided URI is not valid arweave txn ID, insert fallback avatar
             else {
-                mediaType = 'text/plain';
-                avatarData = "Insert identicon here";
+                mediaType = 'image/png';
+                avatarData = identiconEr(arweaveIdData.name);
             }
     }
     let transaction = await arweaveInstance.createTransaction({ data: avatarData }, jwk);
@@ -81,4 +145,32 @@ async function setArweaveData(arweaveIdData, jwk, arweaveInstance) {
     return transaction.id;
 }
 exports.setArweaveData = setArweaveData;
+async function getAddressfromArweaveID(arweaveID, arweaveInstance) {
+    const query = `query { transactions(tags: [{name:"App-Name", value:"arweave-id"}, {name:"Name", value:"${arweaveID}"}]) {id tags{name value}}}`;
+    const res = await axios_1.default
+        .post(`${arweaveInstance.api.config.protocol}://${arweaveInstance.api.config.host}:${arweaveInstance.api.config.port}/arql`, { query: query });
+    let arweaveIDTxns = res.data.data.transactions; // Gets all transactions that claim 'arweaveID'
+    if (arweaveIDTxns.length > 0) {
+        var nameTxn = await arweaveInstance.transactions.get(arweaveIDTxns[arweaveIDTxns.length - 1].id); //Set owning transaction as earliest transaction by earliest blocktime
+        var owner = await arweaveInstance.wallets.ownerToAddress(nameTxn.owner);
+        let ownerTxns = (await getArweaveIDTxnsForAddress(owner, arweaveInstance)).map(txn => txn.id);
+        let nameChanges = arweaveIDTxns.map(txn => txn.id).filter(txn => ownerTxns.includes(txn) == false); // Look for any txns from a wallet other than 'owner' claiming a given arweaveID
+        if (nameChanges.length == 0) {
+            return owner; //If no other claimants found, assume 'owner' owns ArweaveID
+        }
+        //TODO: Add logic to determine if any subsequent `nameChanges` transactions are valid
+    }
+    return '';
+}
+exports.getAddressfromArweaveID = getAddressfromArweaveID;
+function identiconEr(name) {
+    const hash = new jshashes_1.SHA256;
+    return new identicon_js_1.default(hash.hex(name)).toString();
+}
+async function getArweaveIDTxnsForAddress(address, arweaveInstance) {
+    var query = `query { transactions(from:["${address}"],tags: [{name:"App-Name", value:"arweave-id"}]) {id tags{name value}}}`;
+    let res = await axios_1.default
+        .post(`${arweaveInstance.api.config.protocol}://${arweaveInstance.api.config.host}:${arweaveInstance.api.config.port}/arql`, { query: query });
+    return res.data.data.transactions;
+}
 //# sourceMappingURL=arweaveID.js.map

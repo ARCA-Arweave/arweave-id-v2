@@ -15,10 +15,10 @@ export interface ArweaveId {
 	avatarDataUri?: string
 }
 
-export async function retrieveArweaveIdfromAddress(address: string, arweaveInstance: IArweave): Promise<ArweaveId | string> {
+export async function retrieveArweaveIdfromAddress(address: string, arweaveInstance: IArweave): Promise<ArweaveId> {
 	let transactions = await getArweaveIDTxnsForAddress(address, arweaveInstance);
 	if (transactions.length == 0)
-		return '';
+		return { name: ''};
 
 	var id: ArweaveId = { name: '' };
 	let v2Txns = transactions.filter(txn => txn.tags.filter(tag => tag['value'] === '0.0.2').length > 0);
@@ -166,7 +166,7 @@ export async function getAddressfromArweaveID(arweaveID: string, arweaveInstance
 		}
 		//TODO: Add logic to determine if any subsequent `nameChanges` transactions are valid
 	}
-	else return '';
+	return '';
 }
 
 function identiconEr(name: string): string {

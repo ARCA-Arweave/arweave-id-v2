@@ -17,12 +17,12 @@
     "fix": "gts fix",
     "prepare": "npm run compile",
     "pretest": "npm run compile",
-    "posttest": "npm run check",
     "run": "npx ts-node src/index.ts"
   },
   "devDependencies": {
     "@types/jest": "^25.2.3",
     "@types/node": "^13.11.1",
+    "arweave": "^1.7.1",
     "gts": "^2.0.2",
     "jest": "^26.0.1",
     "ts-jest": "^26.1.0",

@@ -92,6 +92,7 @@ interface TransactionStatusResponse {
 interface Transactions {
     getTransactionAnchor(): Promise<string>;
     getPrice(byteSize: number, targetAddress?: string | undefined): Promise<string>;
+    get(id: string): Promise<Transaction>;
     getStatus(id: string): Promise<TransactionStatusResponse>;
     getData(id: string, options?: {
         decode?: boolean | undefined;
@@ -101,8 +102,12 @@ interface Transactions {
     verify(transaction: Transaction): Promise<boolean>;
     post(transaction: string | object | Transaction | Buffer): Promise<AxiosResponse<any>>;
 }
+interface Wallets {
+    ownerToAddress(owner: string): Promise<string>;
+}
 export default interface IArweave {
     api: Api;
+    wallets: Wallets;
     transactions: Transactions;
     createTransaction(attributes: Partial<CreateTransactionInterface>, jwk: JWKInterface): Promise<Transaction>;
     createSiloTransaction(attributes: Partial<CreateTransactionInterface>, jwk: JWKInterface, siloUri: string): Promise<Transaction>;
