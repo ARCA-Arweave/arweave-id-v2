@@ -183,7 +183,7 @@ function identiconEr(name: string): string {
 
 async function getArweaveIDTxnsForAddress(address: string, arweaveInstance: IArweave): Promise<any[]>{
 	var query =
-	`query { transactions(from:["${address}"],tags: [{name:"App-Name", value:"arweave-id"},{name:"App-Version",value:"0.0.2"}]) {id tags{name value}}}`;
+	`query { transactions(from:["${address}"],tags: [{name:"App-Name", value:"arweave-id"}]) {id tags{name value}}}`;
 	let res = await axios
 	.post(`${arweaveInstance.api.config.protocol}://${arweaveInstance.api.config.host}:${arweaveInstance.api.config.port}/arql`
 		, { query: query });
