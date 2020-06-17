@@ -18,7 +18,7 @@ export interface ArweaveId {
 export async function retrieveArweaveIdfromAddress(address: string, arweaveInstance: IArweave): Promise<ArweaveId> {
 	let transactions = await getArweaveIDTxnsForAddress(address, arweaveInstance);
 	if (transactions.length == 0)
-		return { name: ''};
+		return { name: ''}; 
 
 	var id: ArweaveId = { name: '' };
 	let v2Txns = transactions.filter(txn => txn.tags.filter(tag => tag['value'] === '0.0.2').length > 0);
