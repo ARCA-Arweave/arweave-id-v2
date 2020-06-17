@@ -1,6 +1,6 @@
 import * as ArweaveID from './arweaveID'
 import Arweave from 'arweave/node'
-//import jwk from './secrets/jwk.json'
+import jwk from './secrets/jwk.json'
 
 describe('Test arweaveID.ts functions',()=>{
 	const arweave = Arweave.init({
@@ -32,7 +32,7 @@ describe('Test arweaveID.ts functions',()=>{
 		let res: ArweaveID.ArweaveId = await ArweaveID.retrieveArweaveIdfromAddress('CvbdmU66JFe5D14j2wYZEFSfO1hZY8dZy4W-9Ev2q0Y', arweave)
 
 		expect(res).toEqual({ "name": 'sparrow', "discord": 'Sparrow#2791' })
-	})/*
+	})
 	it('setArweaveData returns a new transaction id', async () => {
 		expect(1)
 		let address = await arweave.wallets.jwkToAddress(jwk)
@@ -43,7 +43,7 @@ describe('Test arweaveID.ts functions',()=>{
 		let res = await ArweaveID.setArweaveData(aridData,jwk,arweave)
 
 		expect(res).toMatch(/\S{43}/) //<= I am just testing for a string 43 characters long here
-	})*/
+	})
 
 })
 
