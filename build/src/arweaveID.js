@@ -91,13 +91,9 @@ async function setArweaveData(arweaveIdData, jwk, arweaveInstance) {
     switch ((_a = arweaveIdData.avatarDataUri) === null || _a === void 0 ? void 0 : _a.split(':')[0]) {
         // If dataURI format, check for optional media type or note unknown
         case 'data':
-            mediaType = arweaveIdData.avatarDataUri ? arweaveIdData.avatarDataUri.split(';')[0].split(':')[1] : 'Unknown/type';
-            if (arweaveIdData.avatarDataUri.split(';')[1] === 'base64') {
-                avatarData = toUint8Array(arweaveIdData.avatarDataUri.split(',')[1]);
-            }
-            else {
-                avatarData = arweaveIdData.avatarDataUri.split(',')[1];
-            }
+            let imgData = arweaveIdData.avatarDataUri.split(',')[1];
+            avatarData = toUint8Array(imgData);
+            mediaType = arweaveIdData.avatarDataUri.split(';')[0].split(':')[1];
             break;
         // If URL is detected, throw error
         case 'http':
@@ -149,16 +145,24 @@ async function getAddressfromArweaveID(arweaveID, arweaveInstance) {
     const query = `query { transactions(tags: [{name:"App-Name", value:"arweave-id"}, {name:"Name", value:"${arweaveID}"}]) {id tags{name value}}}`;
     const res = await axios_1.default
         .post(`${arweaveInstance.api.config.protocol}://${arweaveInstance.api.config.host}:${arweaveInstance.api.config.port}/arql`, { query: query });
-    let arweaveIDTxns = res.data.data.transactions; // Gets all transactions that claim 'arweaveID'
+    var arweaveIDTxns = res.data.data.transactions; // Gets all transactions that claim 'arweaveID'
     if (arweaveIDTxns.length > 0) {
         var nameTxn = await arweaveInstance.transactions.get(arweaveIDTxns[arweaveIDTxns.length - 1].id); //Set owning transaction as earliest transaction by earliest blocktime
-        var owner = await arweaveInstance.wallets.ownerToAddress(nameTxn.owner);
-        let ownerTxns = (await getArweaveIDTxnsForAddress(owner, arweaveInstance)).map(txn => txn.id);
-        let nameChanges = arweaveIDTxns.map(txn => txn.id).filter(txn => ownerTxns.includes(txn) == false); // Look for any txns from a wallet other than 'owner' claiming a given arweaveID
-        if (nameChanges.length == 0) {
-            return owner; //If no other claimants found, assume 'owner' owns ArweaveID
-        }
-        //TODO: Add logic to determine if any subsequent `nameChanges` transactions are valid
+        do {
+            var owner = await arweaveInstance.wallets.ownerToAddress(nameTxn.owner);
+            let ownerTxns = await getArweaveIDTxnsForAddress(owner, arweaveInstance);
+            let ownerNameChanges = ownerTxns.filter(txn => txn.tags.filter(tag => tag['type'] === 'Name' && tag['value'] !== arweaveID).length > 0);
+            if (ownerNameChanges.length == 0)
+                return owner; // If oldest claimant has never changed to another name, owner is found 
+            let ownerNameChangeTxnIndex = ownerTxns.findIndex(txn => txn.id == ownerNameChanges[ownerNameChanges.length - 1].id);
+            var j = arweaveIDTxns.length - 1;
+            do {
+                arweaveIDTxns.pop(); //Remove all name changes from oldest to newest up to when owner released name
+                j--;
+            } while (arweaveIDTxns[j].id != ownerTxns[ownerNameChangeTxnIndex + 1].id);
+            arweaveIDTxns.pop(); //Remove previous owner's claim
+            var nameTxn = await arweaveInstance.transactions.get(arweaveIDTxns[arweaveIDTxns.length - 1].id); // Set owning transaction to remaining earliest transaction
+        } while (true);
     }
     return '';
 }

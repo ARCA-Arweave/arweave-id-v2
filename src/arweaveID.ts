@@ -90,12 +90,9 @@ export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface
 	switch (arweaveIdData.avatarDataUri?.split(':')[0]) {
 		// If dataURI format, check for optional media type or note unknown
 		case 'data':
-			mediaType = arweaveIdData.avatarDataUri ? arweaveIdData.avatarDataUri.split(';')[0].split(':')[1] : 'Unknown/type';
-			if (arweaveIdData.avatarDataUri.split(';')[1] === 'base64') {
-				avatarData = toUint8Array(arweaveIdData.avatarDataUri.split(',')[1]);
-			} else {
-				avatarData = arweaveIdData.avatarDataUri.split(',')[1]
-			}
+			let imgData = arweaveIdData.avatarDataUri.split(',')[1]
+			avatarData = toUint8Array(imgData);
+			mediaType = arweaveIdData.avatarDataUri.split(';')[0].split(':')[1]
 			break;
 		// If URL is detected, throw error
 		case 'http':
