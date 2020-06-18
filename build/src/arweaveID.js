@@ -50,9 +50,7 @@ async function retrieveArweaveIdfromAddress(address, arweaveInstance) {
         }
         else {
             let base64url = await arweaveInstance.transactions.getData(v2Txn.id);
-            let data = arweaveInstance.api.get(`/${v2Txn.id}`);
-            console.log(v2Txn.id);
-            console.log(JSON.stringify(data));
+            let data = arweaveInstance.utils.b64UrlDecode(base64url);
             id.avatarDataUri = `data:${contentType};base64,${data}`;
         }
     }

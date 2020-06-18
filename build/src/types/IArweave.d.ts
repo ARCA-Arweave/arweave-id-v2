@@ -111,7 +111,6 @@ interface Wallets {
     ownerToAddress(owner: string): Promise<string>;
 }
 interface ArweaveUtils {
-    Base64UrlString: string;
     concatBuffers(buffers: Uint8Array[] | ArrayBuffer[]): Uint8Array;
     b64UrlToString(b64UrlString: string): string;
     bufferToString(buffer: Uint8Array | ArrayBuffer): string;
