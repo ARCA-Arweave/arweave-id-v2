@@ -26,24 +26,29 @@ export async function retrieveArweaveIdfromAddress(address: string, arweaveInsta
 
 	// If a V2 ID is found, populate the ArweaveID tags based on the v2 transaction
 	if (v2Txns.length > 0) {
-		for (var j = 0; j < v2Txns[0].tags.length; j++) {
-			let tag = v2Txns[0].tags[j]
+		let v2Txn = v2Txns[0]
+		let contentType = ''
+		for (var j = 0; j < v2Txn.tags.length; j++) {
+			let tag = v2Txn.tags[j]
 			switch (tag['name']) {
 				case 'Name': id.name = tag['value']; break;
 				case 'Email': id.email = tag['value']; break;
 				case 'Ethereum': id.ethereum = tag['value']; break;
 				case 'Twitter': id.ethereum = tag['value']; break;
 				case 'Discord': id.ethereum = tag['value']; break;
+				case 'Content-Type': contentType = tag['value']; break;
 				default:
 			}
 		}
-		if (v2Txns[0].tags['Content-Type'] == 'arweave/transaction') {
-			let originalAvatarTxn = await arweaveInstance.transactions.getData(v2Txns[0].id as string);
+		if (contentType === 'arweave/transaction') {
+			let originalAvatarTxn = await arweaveInstance.transactions.getData(v2Txn.id as string);
 			id.avatarDataUri = `data;base64,${await arweaveInstance.transactions.getData(originalAvatarTxn as string)}`;
-			//TODO: Fix this so it determines the content-type of the avatar and returns it as part of the URI
+			//TODO: Fix this so it determines the content-type of the avatar and returns it as part of the URI <- it should be set in the Content-Type tag of the target txn?
 		}
 		else {
-			id.avatarDataUri = `data:${v2Txns[0].tags.filter(tag => tag['name'] == 'Content-Type')[0]['value']};base64,${await arweaveInstance.transactions.getData(v2Txns[0].id as string)}`;
+			let base64url = await arweaveInstance.transactions.getData(v2Txn.id)
+			let data = arweaveInstance.utils.b64UrlDecode(base64url as string)
+			id.avatarDataUri = `data:${contentType};base64,${data}`;
 		}
 
 	} else { //If no V2 ID is found, find the most recent V1 name transaction

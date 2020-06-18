@@ -2,7 +2,7 @@
  * Arweave interface based on Arweave class from arweave-js v1.7.1
  */
 import { JWKInterface } from './JwkInterface';
-import { AxiosResponse } from 'axios';
+import { AxiosResponse, AxiosRequestConfig, AxiosInstance } from 'axios';
 
 interface ApiConfig {
 	host?: string;
@@ -14,6 +14,12 @@ interface ApiConfig {
 }
 interface Api {
 	config: ApiConfig
+	applyConfig(config: ApiConfig): void
+	getConfig(): ApiConfig
+	// mergeDefaults(config: ApiConfig): ApiConfig
+	get(endpoint: string, config?: AxiosRequestConfig | undefined): Promise<AxiosResponse>
+	post(endpoint: string, body: Buffer | string | object, config?: AxiosRequestConfig | undefined): Promise<AxiosResponse>
+	request(): AxiosInstance
 }
 
 interface CreateTransactionInterface {
@@ -87,6 +93,27 @@ interface Transactions {
 interface Wallets {
 	ownerToAddress(owner: string): Promise<string>;
 }
+interface ArweaveUtils {
+	// Base64UrlString: string;
+	concatBuffers(buffers: Uint8Array[] | ArrayBuffer[]): Uint8Array;
+	b64UrlToString(b64UrlString: string): string;
+	bufferToString(buffer: Uint8Array | ArrayBuffer): string;
+	stringToBuffer(string: string): Uint8Array;
+	stringToB64Url(string: string): string;
+	b64UrlToBuffer(b64UrlString: string): Uint8Array;
+	bufferTob64(buffer: Uint8Array): string;
+	bufferTob64Url(buffer: Uint8Array): string;
+	b64UrlEncode(b64UrlString: string): string;
+	b64UrlDecode(b64UrlString: string): string;
+}
+interface CryptoInterface {
+	generateJWK(): Promise<JWKInterface>;
+	sign(jwk: JWKInterface, data: Uint8Array): Promise<Uint8Array>;
+	verify(publicModulus: string, data: Uint8Array, signature: Uint8Array): Promise<boolean>;
+	encrypt(data: Uint8Array, key: string | Uint8Array): Promise<Uint8Array>;
+	decrypt(encrypted: Uint8Array, key: string | Uint8Array): Promise<Uint8Array>;
+	hash(data: Uint8Array, algorithm?: string): Promise<Uint8Array>;
+}
 export default interface IArweave {
 	api: Api
 	wallets: Wallets
@@ -95,8 +122,8 @@ export default interface IArweave {
 	// ar: Ar
 	// silo: Silo
 	// static init: (apiConfig: ApiConfig) => Arweave
-	// static crypto: CryptoInterface
-	// static utils = ArweaveUtils
+	crypto: CryptoInterface
+	utils: ArweaveUtils;
 
 	createTransaction(attributes: Partial<CreateTransactionInterface>, jwk: JWKInterface): Promise<Transaction>
 	createSiloTransaction(attributes: Partial<CreateTransactionInterface>, jwk: JWKInterface, siloUri: string): Promise<Transaction>

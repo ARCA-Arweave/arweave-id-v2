@@ -17,8 +17,10 @@ async function retrieveArweaveIdfromAddress(address, arweaveInstance) {
     let v1Txns = transactions.filter(txn => txn.tags.filter(tag => tag['value'] === '0.0.1').length > 0);
     // If a V2 ID is found, populate the ArweaveID tags based on the v2 transaction
     if (v2Txns.length > 0) {
-        for (var j = 0; j < v2Txns[0].tags.length; j++) {
-            let tag = v2Txns[0].tags[j];
+        let v2Txn = v2Txns[0];
+        let contentType = '';
+        for (var j = 0; j < v2Txn.tags.length; j++) {
+            let tag = v2Txn.tags[j];
             switch (tag['name']) {
                 case 'Name':
                     id.name = tag['value'];
@@ -35,16 +37,23 @@ async function retrieveArweaveIdfromAddress(address, arweaveInstance) {
                 case 'Discord':
                     id.ethereum = tag['value'];
                     break;
+                case 'Content-Type':
+                    contentType = tag['value'];
+                    break;
                 default:
             }
         }
-        if (v2Txns[0].tags['Content-Type'] == 'arweave/transaction') {
-            let originalAvatarTxn = await arweaveInstance.transactions.getData(v2Txns[0].id);
+        if (contentType === 'arweave/transaction') {
+            let originalAvatarTxn = await arweaveInstance.transactions.getData(v2Txn.id);
             id.avatarDataUri = `data;base64,${await arweaveInstance.transactions.getData(originalAvatarTxn)}`;
-            //TODO: Fix this so it determines the content-type of the avatar and returns it as part of the URI
+            //TODO: Fix this so it determines the content-type of the avatar and returns it as part of the URI <- it should be set in the Content-Type tag of the target txn?
         }
         else {
-            id.avatarDataUri = `data:${v2Txns[0].tags.filter(tag => tag['name'] == 'Content-Type')[0]['value']};base64,${await arweaveInstance.transactions.getData(v2Txns[0].id)}`;
+            let base64url = await arweaveInstance.transactions.getData(v2Txn.id);
+            let data = arweaveInstance.api.get(`/${v2Txn.id}`);
+            console.log(v2Txn.id);
+            console.log(JSON.stringify(data));
+            id.avatarDataUri = `data:${contentType};base64,${data}`;
         }
     }
     else { //If no V2 ID is found, find the most recent V1 name transaction
