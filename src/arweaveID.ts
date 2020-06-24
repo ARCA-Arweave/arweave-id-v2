@@ -15,7 +15,7 @@ export interface ArweaveId {
 	avatarDataUri?: string
 }
 
-export async function retrieveArweaveIdfromAddress(address: string, arweaveInstance: IArweave): Promise<ArweaveId> {
+export async function retrieveArweaveIdFromAddress(address: string, arweaveInstance: IArweave): Promise<ArweaveId> {
 	let transactions = await getArweaveIDTxnsForAddress(address, arweaveInstance);
 	if (transactions.length == 0)
 		return { name: ''}; 
@@ -26,10 +26,18 @@ export async function retrieveArweaveIdfromAddress(address: string, arweaveInsta
 
 	// If a V2 ID is found, populate the ArweaveID tags based on the v2 transaction
 	if (v2Txns.length > 0) {
-		let v2Txn = v2Txns[0]
+		var nameTxn = v2Txns[0];
+
+		// Find correct ArweaveID based on getAddressFromArweaveID rules
+		for (var j = 1; j < v2Txns.length; j++) {
+			if (address != await getAddressFromArweaveID(nameTxn.tags.filter(tag => tag['name'] == 'Name'), arweaveInstance)['value'])
+			{
+				nameTxn = v2Txns[j];
+			}
+		}
 		let contentType = ''
-		for (var j = 0; j < v2Txn.tags.length; j++) {
-			let tag = v2Txn.tags[j]
+		for (var j = 0; j < nameTxn.tags.length; j++) {
+			let tag = nameTxn.tags[j]
 			switch (tag['name']) {
 				case 'Name': id.name = tag['value']; break;
 				case 'Email': id.email = tag['value']; break;
@@ -41,12 +49,12 @@ export async function retrieveArweaveIdfromAddress(address: string, arweaveInsta
 			}
 		}
 		if (contentType === 'arweave/transaction') {
-			let originalAvatarTxn = await arweaveInstance.transactions.getData(v2Txn.id as string);
+			let originalAvatarTxn = await arweaveInstance.transactions.getData(nameTxn.id as string);
 			id.avatarDataUri = `data;base64,${await arweaveInstance.transactions.getData(originalAvatarTxn as string)}`;
 			//TODO: Fix this so it determines the content-type of the avatar and returns it as part of the URI <- it should be set in the Content-Type tag of the target txn?
 		}
 		else {
-			let base64url = await arweaveInstance.transactions.getData(v2Txn.id)
+			let base64url = await arweaveInstance.transactions.getData(nameTxn.id)
 			let data = arweaveInstance.utils.b64UrlDecode(base64url as string)
 			id.avatarDataUri = `data:${contentType};base64,${data}`;
 		}
@@ -151,13 +159,14 @@ export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface
 	return transaction.id;
 }
 
-export async function getAddressfromArweaveID(arweaveID: string, arweaveInstance: IArweave): Promise<string> {
+export async function getAddressFromArweaveID(arweaveID: string, arweaveInstance: IArweave): Promise<string> {
 	const query =
 		`query { transactions(tags: [{name:"App-Name", value:"arweave-id"}, {name:"Name", value:"${arweaveID}"}]) {id tags{name value}}}`;
 	const res = await axios
 		.post(`${arweaveInstance.api.config.protocol}://${arweaveInstance.api.config.host}:${arweaveInstance.api.config.port}/arql`
 			, { query: query });
-	var arweaveIDTxns = res.data.data.transactions  // Gets all transactions that claim 'arweaveID'
+	let arweaveIDTxns = res.data.data.transactions  // Gets all transactions that claim 'arweaveID' 
+	/*
 	if (arweaveIDTxns.length > 0){
 		var nameTxn = await arweaveInstance.transactions.get(arweaveIDTxns[arweaveIDTxns.length-1].id)  //Set owning transaction as earliest transaction by earliest blocktime
 		do {
@@ -174,6 +183,11 @@ export async function getAddressfromArweaveID(arweaveID: string, arweaveInstance
 		arweaveIDTxns.pop();			//Remove previous owner's claim
 		var nameTxn = await arweaveInstance.transactions.get(arweaveIDTxns[arweaveIDTxns.length-1].id) // Set owning transaction to remaining earliest transaction
 		} while (true);
+	}*/
+
+	if (arweaveIDTxns.length > 0) {
+		let nameTxn = await arweaveInstance.transactions.get(arweaveIDTxns[arweaveIDTxns.length-1].id) 
+		return await arweaveInstance.wallets.ownerToAddress(nameTxn.owner);
 	}
 	return '';
 }
