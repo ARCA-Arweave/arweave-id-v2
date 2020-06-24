@@ -16,7 +16,7 @@ describe('Test arweaveID.ts functions',()=>{
 
 		let res: ArweaveID.ArweaveId = await ArweaveID.retrieveArweaveIdFromAddress('v2XXwq_FvVqH2KR4p_x8H-SQ7rDwZBbykSv-59__Avc', arweave)
 
-		expect(res.name).toEqual("Testy Mc Testface")
+		expect(res.name).toEqual("RosMcMahon2")
 		expect(res.avatarDataUri).toBeDefined() 
 	}, 20000)
 	it('retrieveArweaveIdfromAddress gets a wallet\'s name with a V1 ID', async () => {
@@ -43,7 +43,7 @@ describe('Test arweaveID.ts functions',()=>{
 
 	// 	let res = await ArweaveID.setArweaveData(aridData,jwk,arweave)
 
-	// 	expect(res).toMatch(/\S{43}/) //<= I am just testing for a string 43 characters long here
+	// 	expect(res)..data.data.transaction.idtoMatch(/\S{43}/) //<= I am just testing for a string 43 characters long here
 	// }, 20000)
 
 })

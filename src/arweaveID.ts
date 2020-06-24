@@ -97,7 +97,7 @@ export async function retrieveArweaveIdFromAddress(address: string, arweaveInsta
 	return id;
 }
 
-export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveInstance: IArweave): Promise<string> {
+export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveInstance: IArweave): Promise<any> {
 	var mediaType: string
 	var avatarData: any
 	switch (arweaveIdData.avatarDataUri?.split(':')[0]) {
@@ -123,7 +123,7 @@ export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface
 				mediaType = 'arweave/transaction';
 				avatarData = arweaveIdData.avatarDataUri!;
 			}
-			// TODO: If provided URI is not valid arweave txn ID, insert fallback avatar
+			// If provided URI is not valid arweave txn ID, insert fallback avatar
 			else {
 
 				mediaType = 'image/png';
@@ -136,6 +136,8 @@ export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface
 	transaction.addTag('App-Version', '0.0.2');
 	transaction.addTag('Name', arweaveIdData.name);
 	transaction.addTag('Content-Type', mediaType);
+
+	// Set additional fields if present on ArweaveID instance that is passed
 	if (arweaveIdData.email !== undefined) {
 		transaction.addTag('Email', arweaveIdData.email);
 	}
@@ -155,8 +157,8 @@ export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface
 	console.log('Transaction id is ' + transaction.id);
 
 	const res = await arweaveInstance.transactions.post(transaction)
-
-	return transaction.id;
+	console.log(res);
+	return {'txID':transaction.id, 'status_code': res.data.id};
 }
 
 export async function getAddressFromArweaveID(arweaveID: string, arweaveInstance: IArweave): Promise<string> {
