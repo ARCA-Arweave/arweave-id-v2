@@ -14,7 +14,7 @@ describe('Test arweaveID.ts functions',()=>{
 	it('retrieveArweaveIdfromAddress gets a wallet\'s name for an account with a V2 ID', async () => {
 		expect(1)
 
-		let res: ArweaveID.ArweaveId = await ArweaveID.retrieveArweaveIdfromAddress('v2XXwq_FvVqH2KR4p_x8H-SQ7rDwZBbykSv-59__Avc', arweave)
+		let res: ArweaveID.ArweaveId = await ArweaveID.retrieveArweaveIdFromAddress('v2XXwq_FvVqH2KR4p_x8H-SQ7rDwZBbykSv-59__Avc', arweave)
 
 		expect(res.name).toEqual("Testy Mc Testface")
 		expect(res.avatarDataUri).toBeDefined() 
@@ -22,14 +22,14 @@ describe('Test arweaveID.ts functions',()=>{
 	it('retrieveArweaveIdfromAddress gets a wallet\'s name with a V1 ID', async () => {
 		expect(1)
 
-		let res: ArweaveID.ArweaveId = await ArweaveID.retrieveArweaveIdfromAddress('ovNqyRqs9ue4pCzc6SiLQ8UMxxLagnoTpR1LUeEstU8', arweave)
+		let res: ArweaveID.ArweaveId = await ArweaveID.retrieveArweaveIdFromAddress('ovNqyRqs9ue4pCzc6SiLQ8UMxxLagnoTpR1LUeEstU8', arweave)
 
 		expect(res).toEqual({"name": "clemente"})
 	}, 20000)
 	it('retrieveArweaveIdfromAddress gets a wallet\'s discord name with a V1 ID', async () => {
 		expect(1)
 
-		let res: ArweaveID.ArweaveId = await ArweaveID.retrieveArweaveIdfromAddress('CvbdmU66JFe5D14j2wYZEFSfO1hZY8dZy4W-9Ev2q0Y', arweave)
+		let res: ArweaveID.ArweaveId = await ArweaveID.retrieveArweaveIdFromAddress('CvbdmU66JFe5D14j2wYZEFSfO1hZY8dZy4W-9Ev2q0Y', arweave)
 
 		expect(res).toEqual({ "name": 'sparrow', "discord": 'Sparrow#2791' })
 	}, 20000)
