@@ -3,12 +3,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAddressfromArweaveID = exports.setArweaveData = exports.retrieveArweaveIdfromAddress = void 0;
+exports.getAddressFromArweaveID = exports.setArweaveData = exports.retrieveArweaveIdFromAddress = void 0;
 const axios_1 = __importDefault(require("axios"));
 const identicon_js_1 = __importDefault(require("identicon.js"));
 const jshashes_1 = require("jshashes");
 const toUint8Array = require('base64-to-uint8array');
-async function retrieveArweaveIdfromAddress(address, arweaveInstance) {
+async function retrieveArweaveIdFromAddress(address, arweaveInstance) {
     let transactions = await getArweaveIDTxnsForAddress(address, arweaveInstance);
     if (transactions.length == 0)
         return { name: '' };
@@ -17,10 +17,16 @@ async function retrieveArweaveIdfromAddress(address, arweaveInstance) {
     let v1Txns = transactions.filter(txn => txn.tags.filter(tag => tag['value'] === '0.0.1').length > 0);
     // If a V2 ID is found, populate the ArweaveID tags based on the v2 transaction
     if (v2Txns.length > 0) {
-        let v2Txn = v2Txns[0];
+        var nameTxn = v2Txns[0];
+        // Find correct ArweaveID based on getAddressFromArweaveID rules
+        for (var j = 1; j < v2Txns.length; j++) {
+            if (address != await getAddressFromArweaveID(nameTxn.tags.filter(tag => tag['name'] == 'Name'), arweaveInstance)['value']) {
+                nameTxn = v2Txns[j];
+            }
+        }
         let contentType = '';
-        for (var j = 0; j < v2Txn.tags.length; j++) {
-            let tag = v2Txn.tags[j];
+        for (var j = 0; j < nameTxn.tags.length; j++) {
+            let tag = nameTxn.tags[j];
             switch (tag['name']) {
                 case 'Name':
                     id.name = tag['value'];
@@ -44,12 +50,12 @@ async function retrieveArweaveIdfromAddress(address, arweaveInstance) {
             }
         }
         if (contentType === 'arweave/transaction') {
-            let originalAvatarTxn = await arweaveInstance.transactions.getData(v2Txn.id);
+            let originalAvatarTxn = await arweaveInstance.transactions.getData(nameTxn.id);
             id.avatarDataUri = `data;base64,${await arweaveInstance.transactions.getData(originalAvatarTxn)}`;
             //TODO: Fix this so it determines the content-type of the avatar and returns it as part of the URI <- it should be set in the Content-Type tag of the target txn?
         }
         else {
-            let base64url = await arweaveInstance.transactions.getData(v2Txn.id);
+            let base64url = await arweaveInstance.transactions.getData(nameTxn.id);
             let data = arweaveInstance.utils.b64UrlDecode(base64url);
             id.avatarDataUri = `data:${contentType};base64,${data}`;
         }
@@ -90,7 +96,7 @@ async function retrieveArweaveIdfromAddress(address, arweaveInstance) {
     }
     return id;
 }
-exports.retrieveArweaveIdfromAddress = retrieveArweaveIdfromAddress;
+exports.retrieveArweaveIdFromAddress = retrieveArweaveIdFromAddress;
 async function setArweaveData(arweaveIdData, jwk, arweaveInstance) {
     var _a;
     var mediaType;
@@ -118,7 +124,7 @@ async function setArweaveData(arweaveIdData, jwk, arweaveInstance) {
                 mediaType = 'arweave/transaction';
                 avatarData = arweaveIdData.avatarDataUri;
             }
-            // TODO: If provided URI is not valid arweave txn ID, insert fallback avatar
+            // If provided URI is not valid arweave txn ID, insert fallback avatar
             else {
                 mediaType = 'image/png';
                 avatarData = identiconEr(arweaveIdData.name);
@@ -127,8 +133,9 @@ async function setArweaveData(arweaveIdData, jwk, arweaveInstance) {
     let transaction = await arweaveInstance.createTransaction({ data: avatarData }, jwk);
     transaction.addTag('App-Name', 'arweave-id');
     transaction.addTag('App-Version', '0.0.2');
-    transaction.addTag('Name', arweaveIdData.name);
+    transaction.addTag('Name', arweaveIdData.name.trim());
     transaction.addTag('Content-Type', mediaType);
+    // Set additional fields if present on ArweaveID instance that is passed
     if (arweaveIdData.email !== undefined) {
         transaction.addTag('Email', arweaveIdData.email);
     }
@@ -145,35 +152,39 @@ async function setArweaveData(arweaveIdData, jwk, arweaveInstance) {
     console.log('Transaction verified: ' + await arweaveInstance.transactions.verify(transaction));
     console.log('Transaction id is ' + transaction.id);
     const res = await arweaveInstance.transactions.post(transaction);
-    return transaction.id;
+    return { 'txID': transaction.id, 'status_code': res.status, 'status_message': res.statusText };
 }
 exports.setArweaveData = setArweaveData;
-async function getAddressfromArweaveID(arweaveID, arweaveInstance) {
+async function getAddressFromArweaveID(arweaveID, arweaveInstance) {
     const query = `query { transactions(tags: [{name:"App-Name", value:"arweave-id"}, {name:"Name", value:"${arweaveID}"}]) {id tags{name value}}}`;
     const res = await axios_1.default
         .post(`${arweaveInstance.api.config.protocol}://${arweaveInstance.api.config.host}:${arweaveInstance.api.config.port}/arql`, { query: query });
-    var arweaveIDTxns = res.data.data.transactions; // Gets all transactions that claim 'arweaveID'
-    if (arweaveIDTxns.length > 0) {
-        var nameTxn = await arweaveInstance.transactions.get(arweaveIDTxns[arweaveIDTxns.length - 1].id); //Set owning transaction as earliest transaction by earliest blocktime
+    let arweaveIDTxns = res.data.data.transactions; // Gets all transactions that claim 'arweaveID' 
+    /*
+    if (arweaveIDTxns.length > 0){
+        var nameTxn = await arweaveInstance.transactions.get(arweaveIDTxns[arweaveIDTxns.length-1].id)  //Set owning transaction as earliest transaction by earliest blocktime
         do {
-            var owner = await arweaveInstance.wallets.ownerToAddress(nameTxn.owner);
-            let ownerTxns = await getArweaveIDTxnsForAddress(owner, arweaveInstance);
-            let ownerNameChanges = ownerTxns.filter(txn => txn.tags.filter(tag => tag['type'] === 'Name' && tag['value'] !== arweaveID).length > 0);
-            if (ownerNameChanges.length == 0)
-                return owner; // If oldest claimant has never changed to another name, owner is found 
-            let ownerNameChangeTxnIndex = ownerTxns.findIndex(txn => txn.id == ownerNameChanges[ownerNameChanges.length - 1].id);
-            var j = arweaveIDTxns.length - 1;
-            do {
-                arweaveIDTxns.pop(); //Remove all name changes from oldest to newest up to when owner released name
-                j--;
-            } while (arweaveIDTxns[j].id != ownerTxns[ownerNameChangeTxnIndex + 1].id);
-            arweaveIDTxns.pop(); //Remove previous owner's claim
-            var nameTxn = await arweaveInstance.transactions.get(arweaveIDTxns[arweaveIDTxns.length - 1].id); // Set owning transaction to remaining earliest transaction
+        var owner = await arweaveInstance.wallets.ownerToAddress(nameTxn.owner);
+        let ownerTxns = await getArweaveIDTxnsForAddress(owner, arweaveInstance);
+        let ownerNameChanges = ownerTxns.filter(txn => txn.tags.filter(tag => tag['type'] === 'Name' && tag['value'] !== arweaveID).length > 0)
+        if (ownerNameChanges.length == 0) return owner;  // If oldest claimant has never changed to another name, owner is found
+        let ownerNameChangeTxnIndex = ownerTxns.findIndex(txn => txn.id == ownerNameChanges[ownerNameChanges.length-1].id)
+        var j = arweaveIDTxns.length-1
+        do{
+            arweaveIDTxns.pop();		//Remove all name changes from oldest to newest up to when owner released name
+            j--;
+        } while (arweaveIDTxns[j].id != ownerTxns[ownerNameChangeTxnIndex+1].id)
+        arweaveIDTxns.pop();			//Remove previous owner's claim
+        var nameTxn = await arweaveInstance.transactions.get(arweaveIDTxns[arweaveIDTxns.length-1].id) // Set owning transaction to remaining earliest transaction
         } while (true);
+    }*/
+    if (arweaveIDTxns.length > 0) {
+        let nameTxn = await arweaveInstance.transactions.get(arweaveIDTxns[arweaveIDTxns.length - 1].id);
+        return await arweaveInstance.wallets.ownerToAddress(nameTxn.owner);
     }
     return '';
 }
-exports.getAddressfromArweaveID = getAddressfromArweaveID;
+exports.getAddressFromArweaveID = getAddressFromArweaveID;
 function identiconEr(name) {
     const hash = new jshashes_1.SHA256;
     return new identicon_js_1.default(hash.hex(name)).toString();

@@ -8,6 +8,6 @@ export interface ArweaveId {
     discord?: string;
     avatarDataUri?: string;
 }
-export declare function retrieveArweaveIdfromAddress(address: string, arweaveInstance: IArweave): Promise<ArweaveId>;
-export declare function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveInstance: IArweave): Promise<string>;
-export declare function getAddressfromArweaveID(arweaveID: string, arweaveInstance: IArweave): Promise<string>;
+export declare function retrieveArweaveIdFromAddress(address: string, arweaveInstance: IArweave): Promise<ArweaveId>;
+export declare function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveInstance: IArweave): Promise<any>;
+export declare function getAddressFromArweaveID(arweaveID: string, arweaveInstance: IArweave): Promise<string>;
