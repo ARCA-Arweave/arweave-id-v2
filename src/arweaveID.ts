@@ -134,7 +134,7 @@ export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface
 	let transaction = await arweaveInstance.createTransaction({ data: avatarData }, jwk);
 	transaction.addTag('App-Name', 'arweave-id');
 	transaction.addTag('App-Version', '0.0.2');
-	transaction.addTag('Name', arweaveIdData.name);
+	transaction.addTag('Name', arweaveIdData.name.trim());
 	transaction.addTag('Content-Type', mediaType);
 
 	// Set additional fields if present on ArweaveID instance that is passed
@@ -157,8 +157,8 @@ export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface
 	console.log('Transaction id is ' + transaction.id);
 
 	const res = await arweaveInstance.transactions.post(transaction)
-	console.log(res);
-	return {'txID':transaction.id, 'status_code': res.data.id};
+
+	return {'txID':transaction.id, 'status_code': res.status, 'status_message':res.statusText};
 }
 
 export async function getAddressFromArweaveID(arweaveID: string, arweaveInstance: IArweave): Promise<string> {
