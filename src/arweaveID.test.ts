@@ -43,7 +43,7 @@ describe('Test arweaveID.ts functions',()=>{
 
 	// 	let res = await ArweaveID.setArweaveData(aridData,jwk,arweave)
 
-	// 	expect(res)..data.data.transaction.idtoMatch(/\S{43}/) //<= I am just testing for a string 43 characters long here
+	// 	expect(res).txId.toMatch(/\S{43}/) //<= I am just testing for a string 43 characters long here
 	// }, 20000)
 
 })
