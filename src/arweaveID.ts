@@ -1,4 +1,3 @@
-// import Arweave from 'arweave/node';
 import IArweave from './types/IArweave';
 import { JWKInterface } from './types/JwkInterface';
 import axios, { AxiosResponse } from 'axios';
@@ -185,7 +184,7 @@ export async function getAddressFromArweaveID(arweaveID: string, arweaveInstance
 	return '';
 }
 
-function identiconEr(name: string): string {
+export function identiconEr(name: string): string {
 	const hash = new SHA256;
 	return new identicon(hash.hex(name)).toString();
 }
