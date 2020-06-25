@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAddressFromArweaveID = exports.setArweaveData = exports.retrieveArweaveIdFromAddress = void 0;
+exports.identiconEr = exports.getAddressFromArweaveID = exports.setArweaveData = exports.retrieveArweaveIdFromAddress = void 0;
 const axios_1 = __importDefault(require("axios"));
 const identicon_js_1 = __importDefault(require("identicon.js"));
 const jshashes_1 = require("jshashes");
@@ -20,8 +20,12 @@ async function retrieveArweaveIdFromAddress(address, arweaveInstance) {
         var nameTxn = v2Txns[0];
         // Find correct ArweaveID based on getAddressFromArweaveID rules
         for (var j = 1; j < v2Txns.length; j++) {
-            if (address != await getAddressFromArweaveID(nameTxn.tags.filter(tag => tag['name'] == 'Name'), arweaveInstance)['value']) {
-                nameTxn = v2Txns[j];
+            if (address != await getAddressFromArweaveID(nameTxn.tags.filter(tag => tag['name'] == 'Name')[0]['value'], arweaveInstance)) {
+                nameTxn = v2Txns[j]; //Work backwards through the list of name transactions to exclude any made for a name already owned by another address
+            }
+            else {
+                console.log(`name transaction == ${nameTxn.id}`);
+                break;
             }
         }
         let contentType = '';
@@ -48,16 +52,6 @@ async function retrieveArweaveIdFromAddress(address, arweaveInstance) {
                     break;
                 default:
             }
-        }
-        if (contentType === 'arweave/transaction') {
-            let originalAvatarTxn = await arweaveInstance.transactions.getData(nameTxn.id);
-            id.avatarDataUri = `data;base64,${await arweaveInstance.transactions.getData(originalAvatarTxn)}`;
-            //TODO: Fix this so it determines the content-type of the avatar and returns it as part of the URI <- it should be set in the Content-Type tag of the target txn?
-        }
-        else {
-            let base64url = await arweaveInstance.transactions.getData(nameTxn.id);
-            let data = arweaveInstance.utils.b64UrlDecode(base64url);
-            id.avatarDataUri = `data:${contentType};base64,${data}`;
         }
     }
     else { //If no V2 ID is found, find the most recent V1 name transaction
@@ -189,6 +183,7 @@ function identiconEr(name) {
     const hash = new jshashes_1.SHA256;
     return new identicon_js_1.default(hash.hex(name)).toString();
 }
+exports.identiconEr = identiconEr;
 async function getArweaveIDTxnsForAddress(address, arweaveInstance) {
     var query = `query { transactions(from:["${address}"],tags: [{name:"App-Name", value:"arweave-id"}]) {id tags{name value}}}`;
     let res = await axios_1.default

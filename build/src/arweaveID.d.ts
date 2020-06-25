@@ -11,3 +11,4 @@ export interface ArweaveId {
 export declare function retrieveArweaveIdFromAddress(address: string, arweaveInstance: IArweave): Promise<ArweaveId>;
 export declare function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveInstance: IArweave): Promise<any>;
 export declare function getAddressFromArweaveID(arweaveID: string, arweaveInstance: IArweave): Promise<string>;
+export declare function identiconEr(name: string): string;
