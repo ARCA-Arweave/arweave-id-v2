@@ -27,14 +27,16 @@ export async function retrieveArweaveIdFromAddress(address: string, arweaveInsta
 	// If a V2 ID is found, populate the ArweaveID tags based on the v2 transaction
 	if (v2Txns.length > 0) {
 		var nameTxn = v2Txns[0];
-
 		// Find correct ArweaveID based on getAddressFromArweaveID rules
 		for (var j = 1; j < v2Txns.length; j++) {
-			if (address != await getAddressFromArweaveID(nameTxn.tags.filter(tag => tag['name'] == 'Name'), arweaveInstance)['value'])
+			if (address != await getAddressFromArweaveID(nameTxn.tags.filter(tag => tag['name'] == 'Name')[0]['value'], arweaveInstance))
 			{
-				nameTxn = v2Txns[j];
+				nameTxn = v2Txns[j]; //Work backwards through the list of name transactions to exclude any made for a name already owned by another address
 			}
-		}
+			else {
+				console.log(`name transaction == ${nameTxn.id}`);
+				break;
+		}}
 		let contentType = ''
 		for (var j = 0; j < nameTxn.tags.length; j++) {
 			let tag = nameTxn.tags[j]
@@ -47,16 +49,6 @@ export async function retrieveArweaveIdFromAddress(address: string, arweaveInsta
 				case 'Content-Type': contentType = tag['value']; break;
 				default:
 			}
-		}
-		if (contentType === 'arweave/transaction') {
-			let originalAvatarTxn = await arweaveInstance.transactions.getData(nameTxn.id as string);
-			id.avatarDataUri = `data;base64,${await arweaveInstance.transactions.getData(originalAvatarTxn as string)}`;
-			//TODO: Fix this so it determines the content-type of the avatar and returns it as part of the URI <- it should be set in the Content-Type tag of the target txn?
-		}
-		else {
-			let base64url = await arweaveInstance.transactions.getData(nameTxn.id)
-			let data = arweaveInstance.utils.b64UrlDecode(base64url as string)
-			id.avatarDataUri = `data:${contentType};base64,${data}`;
 		}
 
 	} else { //If no V2 ID is found, find the most recent V1 name transaction
@@ -125,7 +117,6 @@ export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface
 			}
 			// If provided URI is not valid arweave txn ID, insert fallback avatar
 			else {
-
 				mediaType = 'image/png';
 				avatarData = identiconEr(arweaveIdData.name);
 			}
