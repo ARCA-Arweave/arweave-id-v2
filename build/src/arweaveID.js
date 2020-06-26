@@ -96,7 +96,7 @@ async function retrieveArweaveIdFromAddress(address, arweaveInstance) {
 exports.retrieveArweaveIdFromAddress = retrieveArweaveIdFromAddress;
 async function setArweaveData(arweaveIdData, jwk, arweaveInstance) {
     var _a;
-    var mediaType;
+    var mediaType = '';
     var avatarData;
     switch ((_a = arweaveIdData.avatarDataUri) === null || _a === void 0 ? void 0 : _a.split(':')[0]) {
         // If dataURI format, check for optional media type or note unknown
@@ -111,20 +111,18 @@ async function setArweaveData(arweaveIdData, jwk, arweaveInstance) {
             throw ('Remote images not supported');
         // If no URI provided, insert '0' in data field so transaction can be submitted
         case undefined:
-            mediaType = 'image/png';
-            avatarData = toUint8Array('0');
+            avatarData = '0';
             break;
         default:
             // If provided URI is not valid, insert '0' in data field so transaction can be submitted
-            mediaType = 'image/png';
-            avatarData = toUint8Array('0');
+            avatarData = '0';
     }
-    console.log('Media Type is ' + mediaType);
     let transaction = await arweaveInstance.createTransaction({ data: avatarData }, jwk);
     transaction.addTag('App-Name', 'arweave-id');
     transaction.addTag('App-Version', '0.0.2');
     transaction.addTag('Name', arweaveIdData.name.trim());
-    transaction.addTag('Content-Type', mediaType);
+    mediaType.length === 0 ? mediaType = 'none' : transaction.addTag('Content-Type', mediaType);
+    console.log('Media Type is ' + mediaType);
     // Set additional fields if present on ArweaveID instance that is passed
     if (arweaveIdData.email !== undefined) {
         transaction.addTag('Email', arweaveIdData.email);
@@ -141,12 +139,14 @@ async function setArweaveData(arweaveIdData, jwk, arweaveInstance) {
     await arweaveInstance.transactions.sign(transaction, jwk);
     console.log('Transaction verified: ' + await arweaveInstance.transactions.verify(transaction));
     console.log('Transaction id is ' + transaction.id);
-    //const res = await arweaveInstance.transactions.post(transaction)
-    //return { 'txID': transaction.id, 'status_code': res.status, 'status_message': res.statusText };
+    const res = await arweaveInstance.transactions.post(transaction);
+    const status = await arweaveInstance.transactions.getStatus(transaction.id);
+    status.status;
+    return { txid: transaction.id, statusCode: status.status, statusMessage: res.statusText };
 }
 exports.setArweaveData = setArweaveData;
-async function getAddressFromArweaveID(arweaveID, arweaveInstance) {
-    const query = `query { transactions(tags: [{name:"App-Name", value:"arweave-id"}, {name:"Name", value:"${arweaveID}"}]) {id tags{name value}}}`;
+async function getAddressFromArweaveID(name, arweaveInstance) {
+    const query = `query { transactions(tags: [{name:"App-Name", value:"arweave-id"}, {name:"Name", value:"${name}"}]) {id tags{name value}}}`;
     const res = await axios_1.default
         .post(`${arweaveInstance.api.config.protocol}://${arweaveInstance.api.config.host}:${arweaveInstance.api.config.port}/arql`, { query: query });
     let arweaveIDTxns = res.data.data.transactions; // Gets all transactions that claim 'arweaveID' 

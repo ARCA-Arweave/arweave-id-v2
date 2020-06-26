@@ -90,15 +90,27 @@ export async function retrieveArweaveIdFromAddress(address: string, arweaveInsta
 	return id;
 }
 
-export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveInstance: IArweave): Promise<any> {
-	var mediaType: string
-	var avatarData: any
+export interface ISetReturn {
+	txid: string
+	statusCode: number
+	statusMessage: string
+}
+export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveInstance: IArweave): Promise<ISetReturn> {
+	var mediaType: string = ''
+	var avatarData: string
 	switch (arweaveIdData.avatarDataUri?.split(':')[0]) {
 		// If dataURI format, check for optional media type or note unknown
 		case 'data':
-			let imgData = arweaveIdData.avatarDataUri.split(',')[1]
-			avatarData = toUint8Array(imgData);
-			mediaType = arweaveIdData.avatarDataUri.split(';')[0].split(':')[1]
+			avatarData = arweaveIdData.avatarDataUri.split(',')[1]
+			// data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0c...
+			let meta = arweaveIdData.avatarDataUri.split(',')[0]
+			if(meta.split(';')[1]){
+				console.log('base64 detected')
+				avatarData = toUint8Array(avatarData); //if base64 convert to binary using toUnit8Array(base64string)
+				mediaType = meta.split(';')[0].split(':')[1]
+			}else{
+				mediaType = meta.split(':')[1]
+			}
 			break;
 		// If URL is detected, throw error
 		case 'http':
@@ -106,22 +118,20 @@ export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface
 			throw ('Remote images not supported');
 		// If no URI provided, insert '0' in data field so transaction can be submitted
 		case undefined:
-			mediaType = 'image/png';
-			avatarData = toUint8Array('0');
+			avatarData = '0'
 			break;
 		default:
 			// If provided URI is not valid, insert '0' in data field so transaction can be submitted
-			mediaType = 'image/png';
-			avatarData = toUint8Array('0');
+			avatarData = '0'
 
 	}
 
-	console.log('Media Type is ' + mediaType);
 	let transaction = await arweaveInstance.createTransaction({ data: avatarData }, jwk);
 	transaction.addTag('App-Name', 'arweave-id');
 	transaction.addTag('App-Version', '0.0.2');
 	transaction.addTag('Name', arweaveIdData.name.trim());
-	transaction.addTag('Content-Type', mediaType);
+	mediaType.length===0 ? mediaType = 'none' : transaction.addTag('Content-Type', mediaType);
+	console.log('Media Type is ' + mediaType);
 
 	// Set additional fields if present on ArweaveID instance that is passed
 	if (arweaveIdData.email !== undefined) {
@@ -142,14 +152,16 @@ export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface
 	console.log('Transaction verified: ' + await arweaveInstance.transactions.verify(transaction));
 	console.log('Transaction id is ' + transaction.id);
 
-	//const res = await arweaveInstance.transactions.post(transaction)
+	const res = await arweaveInstance.transactions.post(transaction)
+	const status = await arweaveInstance.transactions.getStatus(transaction.id)
+	status.status
 
-	//return { 'txID': transaction.id, 'status_code': res.status, 'status_message': res.statusText };
+	return { txid: transaction.id, statusCode: status.status, statusMessage: res.statusText };
 }
 
-export async function getAddressFromArweaveID(arweaveID: string, arweaveInstance: IArweave): Promise<string> {
+export async function getAddressFromArweaveID(name: string, arweaveInstance: IArweave): Promise<string> {
 	const query =
-		`query { transactions(tags: [{name:"App-Name", value:"arweave-id"}, {name:"Name", value:"${arweaveID}"}]) {id tags{name value}}}`;
+		`query { transactions(tags: [{name:"App-Name", value:"arweave-id"}, {name:"Name", value:"${name}"}]) {id tags{name value}}}`;
 	const res = await axios
 		.post(`${arweaveInstance.api.config.protocol}://${arweaveInstance.api.config.host}:${arweaveInstance.api.config.port}/arql`
 			, { query: query });
