@@ -107,15 +107,16 @@ export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface
 		// If no URI provided, insert fallback avatar
 		case undefined:
 			mediaType = 'image/png';
-			avatarData = identiconEr(arweaveIdData.name);
+			avatarData = toUint8Array(identiconEr(arweaveIdData.name));
 			break;
 		default:
 			// If provided URI is not valid, insert fallback avatar
 			mediaType = 'image/png';
-			avatarData = identiconEr(arweaveIdData.name);
+			avatarData = toUint8Array(identiconEr(arweaveIdData.name));
 
 	}
 
+	console.log('Media Type is ' + mediaType);
 	let transaction = await arweaveInstance.createTransaction({ data: avatarData }, jwk);
 	transaction.addTag('App-Name', 'arweave-id');
 	transaction.addTag('App-Version', '0.0.2');
@@ -141,9 +142,9 @@ export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface
 	console.log('Transaction verified: ' + await arweaveInstance.transactions.verify(transaction));
 	console.log('Transaction id is ' + transaction.id);
 
-	const res = await arweaveInstance.transactions.post(transaction)
+	//const res = await arweaveInstance.transactions.post(transaction)
 
-	return { 'txID': transaction.id, 'status_code': res.status, 'status_message': res.statusText };
+	//return { 'txID': transaction.id, 'status_code': res.status, 'status_message': res.statusText };
 }
 
 export async function getAddressFromArweaveID(arweaveID: string, arweaveInstance: IArweave): Promise<string> {
