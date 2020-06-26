@@ -104,15 +104,15 @@ export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface
 		case 'http':
 		case 'https':
 			throw ('Remote images not supported');
-		// If no URI provided, insert fallback avatar
+		// If no URI provided, insert '0' in data field so transaction can be submitted
 		case undefined:
 			mediaType = 'image/png';
-			avatarData = toUint8Array(identiconEr(arweaveIdData.name));
+			avatarData = toUint8Array('0');
 			break;
 		default:
-			// If provided URI is not valid, insert fallback avatar
+			// If provided URI is not valid, insert '0' in data field so transaction can be submitted
 			mediaType = 'image/png';
-			avatarData = toUint8Array(identiconEr(arweaveIdData.name));
+			avatarData = toUint8Array('0');
 
 	}
 
@@ -180,11 +180,6 @@ export async function getAddressFromArweaveID(arweaveID: string, arweaveInstance
 	return '';
 }
 
-export function identiconEr(name: string): string {
-	const hash = new SHA256;
-	return new identicon(hash.hex(name)).toString();
-}
-
 async function getArweaveIDTxnsForAddress(address: string, arweaveInstance: IArweave): Promise<any[]> {
 	var query =
 		`query { transactions(from:["${address}"],tags: [{name:"App-Name", value:"arweave-id"}]) {id tags{name value}}}`;
@@ -192,4 +187,10 @@ async function getArweaveIDTxnsForAddress(address: string, arweaveInstance: IArw
 		.post(`${arweaveInstance.api.config.protocol}://${arweaveInstance.api.config.host}:${arweaveInstance.api.config.port}/arql`
 			, { query: query });
 	return res.data.data.transactions;
+}
+
+export function identiconEr(name: string): string {
+	const hash = new SHA256;
+	let identiconString = new identicon(hash.hex(name)).toString();
+	return `data:image/png;base64,${identiconString}`;
 }

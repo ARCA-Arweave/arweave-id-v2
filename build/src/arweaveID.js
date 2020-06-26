@@ -109,15 +109,15 @@ async function setArweaveData(arweaveIdData, jwk, arweaveInstance) {
         case 'http':
         case 'https':
             throw ('Remote images not supported');
-        // If no URI provided, insert fallback avatar
+        // If no URI provided, insert '0' in data field so transaction can be submitted
         case undefined:
             mediaType = 'image/png';
-            avatarData = toUint8Array(identiconEr(arweaveIdData.name));
+            avatarData = toUint8Array('0');
             break;
         default:
-            // If provided URI is not valid, insert fallback avatar
+            // If provided URI is not valid, insert '0' in data field so transaction can be submitted
             mediaType = 'image/png';
-            avatarData = toUint8Array(identiconEr(arweaveIdData.name));
+            avatarData = toUint8Array('0');
     }
     console.log('Media Type is ' + mediaType);
     let transaction = await arweaveInstance.createTransaction({ data: avatarData }, jwk);
@@ -175,15 +175,16 @@ async function getAddressFromArweaveID(arweaveID, arweaveInstance) {
     return '';
 }
 exports.getAddressFromArweaveID = getAddressFromArweaveID;
-function identiconEr(name) {
-    const hash = new jshashes_1.SHA256;
-    return new identicon_js_1.default(hash.hex(name)).toString();
-}
-exports.identiconEr = identiconEr;
 async function getArweaveIDTxnsForAddress(address, arweaveInstance) {
     var query = `query { transactions(from:["${address}"],tags: [{name:"App-Name", value:"arweave-id"}]) {id tags{name value}}}`;
     let res = await axios_1.default
         .post(`${arweaveInstance.api.config.protocol}://${arweaveInstance.api.config.host}:${arweaveInstance.api.config.port}/arql`, { query: query });
     return res.data.data.transactions;
 }
+function identiconEr(name) {
+    const hash = new jshashes_1.SHA256;
+    let identiconString = new identicon_js_1.default(hash.hex(name)).toString();
+    return `data:image/png;base64,${identiconString}`;
+}
+exports.identiconEr = identiconEr;
 //# sourceMappingURL=arweaveID.js.map
