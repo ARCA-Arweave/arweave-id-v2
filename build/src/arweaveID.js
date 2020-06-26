@@ -17,7 +17,7 @@ async function retrieveArweaveIdFromAddress(address, arweaveInstance) {
     let v1Txns = transactions.filter(txn => txn.tags.filter(tag => tag['value'] === '0.0.1').length > 0);
     // If a V2 ID is found, populate the ArweaveID tags based on the v2 transaction
     if (v2Txns.length > 0) {
-        var nameTxn = v2Txns[0];
+        let nameTxn = v2Txns[0];
         // Find correct ArweaveID based on getAddressFromArweaveID rules
         for (var j = 1; j < v2Txns.length; j++) {
             if (address != await getAddressFromArweaveID(nameTxn.tags.filter(tag => tag['name'] == 'Name')[0]['value'], arweaveInstance)) {
@@ -28,6 +28,8 @@ async function retrieveArweaveIdFromAddress(address, arweaveInstance) {
                 break;
             }
         }
+        let encodedAvatarData = await arweaveInstance.transactions.getData(nameTxn.id, { decode: true });
+        let decodedAvatarData = arweaveInstance.utils.bufferTob64(encodedAvatarData);
         let contentType = '';
         for (var j = 0; j < nameTxn.tags.length; j++) {
             let tag = nameTxn.tags[j];
@@ -42,13 +44,14 @@ async function retrieveArweaveIdFromAddress(address, arweaveInstance) {
                     id.ethereum = tag['value'];
                     break;
                 case 'Twitter':
-                    id.ethereum = tag['value'];
+                    id.twitter = tag['value'];
                     break;
                 case 'Discord':
-                    id.ethereum = tag['value'];
+                    id.discord = tag['value'];
                     break;
                 case 'Content-Type':
                     contentType = tag['value'];
+                    id.avatarDataUri = `data:${contentType};base64,${decodedAvatarData}`;
                     break;
                 default:
             }
@@ -106,24 +109,17 @@ async function setArweaveData(arweaveIdData, jwk, arweaveInstance) {
         case 'http':
         case 'https':
             throw ('Remote images not supported');
-        // TODO: If no URI provided, insert fallback avatar
+        // If no URI provided, insert fallback avatar
         case undefined:
             mediaType = 'image/png';
-            avatarData = identiconEr(arweaveIdData.name);
+            avatarData = toUint8Array(identiconEr(arweaveIdData.name));
             break;
-        // If not recognizable format, assume URI is Arweave txn and check for a valid transaction and insert transaction string into data field.
         default:
-            let txnStatus = await arweaveInstance.transactions.getStatus(arweaveIdData.avatarDataUri);
-            if (txnStatus.status === 200) {
-                mediaType = 'arweave/transaction';
-                avatarData = arweaveIdData.avatarDataUri;
-            }
-            // If provided URI is not valid arweave txn ID, insert fallback avatar
-            else {
-                mediaType = 'image/png';
-                avatarData = identiconEr(arweaveIdData.name);
-            }
+            // If provided URI is not valid, insert fallback avatar
+            mediaType = 'image/png';
+            avatarData = toUint8Array(identiconEr(arweaveIdData.name));
     }
+    console.log('Media Type is ' + mediaType);
     let transaction = await arweaveInstance.createTransaction({ data: avatarData }, jwk);
     transaction.addTag('App-Name', 'arweave-id');
     transaction.addTag('App-Version', '0.0.2');
@@ -145,8 +141,8 @@ async function setArweaveData(arweaveIdData, jwk, arweaveInstance) {
     await arweaveInstance.transactions.sign(transaction, jwk);
     console.log('Transaction verified: ' + await arweaveInstance.transactions.verify(transaction));
     console.log('Transaction id is ' + transaction.id);
-    const res = await arweaveInstance.transactions.post(transaction);
-    return { 'txID': transaction.id, 'status_code': res.status, 'status_message': res.statusText };
+    //const res = await arweaveInstance.transactions.post(transaction)
+    //return { 'txID': transaction.id, 'status_code': res.status, 'status_message': res.statusText };
 }
 exports.setArweaveData = setArweaveData;
 async function getAddressFromArweaveID(arweaveID, arweaveInstance) {

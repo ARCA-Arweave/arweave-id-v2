@@ -17,7 +17,7 @@ export interface ArweaveId {
 export async function retrieveArweaveIdFromAddress(address: string, arweaveInstance: IArweave): Promise<ArweaveId> {
 	let transactions = await getArweaveIDTxnsForAddress(address, arweaveInstance);
 	if (transactions.length == 0)
-		return { name: ''}; 
+		return { name: '' };
 
 	var id: ArweaveId = { name: '' };
 	let v2Txns = transactions.filter(txn => txn.tags.filter(tag => tag['value'] === '0.0.2').length > 0);
@@ -25,17 +25,19 @@ export async function retrieveArweaveIdFromAddress(address: string, arweaveInsta
 
 	// If a V2 ID is found, populate the ArweaveID tags based on the v2 transaction
 	if (v2Txns.length > 0) {
-		var nameTxn = v2Txns[0];
+		let nameTxn = v2Txns[0];
 		// Find correct ArweaveID based on getAddressFromArweaveID rules
 		for (var j = 1; j < v2Txns.length; j++) {
-			if (address != await getAddressFromArweaveID(nameTxn.tags.filter(tag => tag['name'] == 'Name')[0]['value'], arweaveInstance))
-			{
+			if (address != await getAddressFromArweaveID(nameTxn.tags.filter(tag => tag['name'] == 'Name')[0]['value'], arweaveInstance)) {
 				nameTxn = v2Txns[j]; //Work backwards through the list of name transactions to exclude any made for a name already owned by another address
 			}
 			else {
 				console.log(`name transaction == ${nameTxn.id}`);
 				break;
-		}}
+			}
+		}
+		let encodedAvatarData = await arweaveInstance.transactions.getData(nameTxn.id, {decode: true}) as Uint8Array;
+		let decodedAvatarData = arweaveInstance.utils.bufferTob64(encodedAvatarData);
 		let contentType = ''
 		for (var j = 0; j < nameTxn.tags.length; j++) {
 			let tag = nameTxn.tags[j]
@@ -43,9 +45,9 @@ export async function retrieveArweaveIdFromAddress(address: string, arweaveInsta
 				case 'Name': id.name = tag['value']; break;
 				case 'Email': id.email = tag['value']; break;
 				case 'Ethereum': id.ethereum = tag['value']; break;
-				case 'Twitter': id.ethereum = tag['value']; break;
-				case 'Discord': id.ethereum = tag['value']; break;
-				case 'Content-Type': contentType = tag['value']; break;
+				case 'Twitter': id.twitter = tag['value']; break;
+				case 'Discord': id.discord = tag['value']; break;
+				case 'Content-Type': contentType = tag['value']; id.avatarDataUri = `data:${contentType};base64,${decodedAvatarData}`; break;
 				default:
 			}
 		}
@@ -102,25 +104,19 @@ export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface
 		case 'http':
 		case 'https':
 			throw ('Remote images not supported');
-		// TODO: If no URI provided, insert fallback avatar
+		// If no URI provided, insert fallback avatar
 		case undefined:
 			mediaType = 'image/png';
-			avatarData = identiconEr(arweaveIdData.name);
+			avatarData = toUint8Array(identiconEr(arweaveIdData.name));
 			break;
-		// If not recognizable format, assume URI is Arweave txn and check for a valid transaction and insert transaction string into data field.
 		default:
-			let txnStatus = await arweaveInstance.transactions.getStatus(arweaveIdData.avatarDataUri as string);
-			if (txnStatus.status === 200) {
-				mediaType = 'arweave/transaction';
-				avatarData = arweaveIdData.avatarDataUri!;
-			}
-			// If provided URI is not valid arweave txn ID, insert fallback avatar
-			else {
-				mediaType = 'image/png';
-				avatarData = identiconEr(arweaveIdData.name);
-			}
+			// If provided URI is not valid, insert fallback avatar
+			mediaType = 'image/png';
+			avatarData = toUint8Array(identiconEr(arweaveIdData.name));
+
 	}
 
+	console.log('Media Type is ' + mediaType);
 	let transaction = await arweaveInstance.createTransaction({ data: avatarData }, jwk);
 	transaction.addTag('App-Name', 'arweave-id');
 	transaction.addTag('App-Version', '0.0.2');
@@ -146,9 +142,9 @@ export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface
 	console.log('Transaction verified: ' + await arweaveInstance.transactions.verify(transaction));
 	console.log('Transaction id is ' + transaction.id);
 
-	const res = await arweaveInstance.transactions.post(transaction)
+	//const res = await arweaveInstance.transactions.post(transaction)
 
-	return {'txID':transaction.id, 'status_code': res.status, 'status_message':res.statusText};
+	//return { 'txID': transaction.id, 'status_code': res.status, 'status_message': res.statusText };
 }
 
 export async function getAddressFromArweaveID(arweaveID: string, arweaveInstance: IArweave): Promise<string> {
@@ -178,7 +174,7 @@ export async function getAddressFromArweaveID(arweaveID: string, arweaveInstance
 	}*/
 
 	if (arweaveIDTxns.length > 0) {
-		let nameTxn = await arweaveInstance.transactions.get(arweaveIDTxns[arweaveIDTxns.length-1].id) 
+		let nameTxn = await arweaveInstance.transactions.get(arweaveIDTxns[arweaveIDTxns.length - 1].id)
 		return await arweaveInstance.wallets.ownerToAddress(nameTxn.owner);
 	}
 	return '';
@@ -189,11 +185,11 @@ export function identiconEr(name: string): string {
 	return new identicon(hash.hex(name)).toString();
 }
 
-async function getArweaveIDTxnsForAddress(address: string, arweaveInstance: IArweave): Promise<any[]>{
+async function getArweaveIDTxnsForAddress(address: string, arweaveInstance: IArweave): Promise<any[]> {
 	var query =
-	`query { transactions(from:["${address}"],tags: [{name:"App-Name", value:"arweave-id"}]) {id tags{name value}}}`;
+		`query { transactions(from:["${address}"],tags: [{name:"App-Name", value:"arweave-id"}]) {id tags{name value}}}`;
 	let res = await axios
-	.post(`${arweaveInstance.api.config.protocol}://${arweaveInstance.api.config.host}:${arweaveInstance.api.config.port}/arql`
-		, { query: query });
+		.post(`${arweaveInstance.api.config.protocol}://${arweaveInstance.api.config.host}:${arweaveInstance.api.config.port}/arql`
+			, { query: query });
 	return res.data.data.transactions;
 }
