@@ -3,12 +3,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getIdenticon = exports.getAddressFromArweaveID = exports.setArweaveData = exports.retrieveArweaveIdFromAddress = void 0;
+exports.getIdenticon = exports.check = exports.set = exports.get = void 0;
 const axios_1 = __importDefault(require("axios"));
 const identicon_js_1 = __importDefault(require("identicon.js"));
 const jshashes_1 = require("jshashes");
 const toUint8Array = require('base64-to-uint8array');
-async function retrieveArweaveIdFromAddress(address, arweaveInstance) {
+async function get(address, arweaveInstance) {
     let transactions = await getArweaveIDTxnsForAddress(address, arweaveInstance);
     if (transactions.length == 0)
         return { name: '' };
@@ -20,7 +20,7 @@ async function retrieveArweaveIdFromAddress(address, arweaveInstance) {
         let nameTxn = v2Txns[0];
         // Find correct ArweaveID based on getAddressFromArweaveID rules
         for (var j = 1; j < v2Txns.length; j++) {
-            if (address != await getAddressFromArweaveID(nameTxn.tags.filter(tag => tag['name'] == 'Name')[0]['value'], arweaveInstance)) {
+            if (address != await check(nameTxn.tags.filter(tag => tag['name'] == 'Name')[0]['value'], arweaveInstance)) {
                 nameTxn = v2Txns[j]; //Work backwards through the list of name transactions to exclude any made for a name already owned by another address
             }
             else {
@@ -93,12 +93,12 @@ async function retrieveArweaveIdFromAddress(address, arweaveInstance) {
     }
     return id;
 }
-exports.retrieveArweaveIdFromAddress = retrieveArweaveIdFromAddress;
-async function setArweaveData(arweaveIdData, jwk, arweaveInstance) {
+exports.get = get;
+async function set(arweaveIdData, jwk, arweaveInstance) {
     var _a;
     /* Verify that submitted name is not already taken */
     let signingAddress = await arweaveInstance.wallets.ownerToAddress(jwk.n);
-    let idOwnerAddress = await getAddressFromArweaveID(arweaveIdData.name, arweaveInstance);
+    let idOwnerAddress = await check(arweaveIdData.name, arweaveInstance);
     if ((idOwnerAddress !== '') && (idOwnerAddress !== signingAddress)) {
         return { txid: '', statusCode: 400, statusMessage: 'Name already taken' };
     }
@@ -163,8 +163,8 @@ async function setArweaveData(arweaveIdData, jwk, arweaveInstance) {
     const status = await arweaveInstance.transactions.getStatus(transaction.id);
     return { txid: transaction.id, statusCode: status.status, statusMessage: res.statusText };
 }
-exports.setArweaveData = setArweaveData;
-async function getAddressFromArweaveID(name, arweaveInstance) {
+exports.set = set;
+async function check(name, arweaveInstance) {
     const query = `query { transactions(tags: [{name:"App-Name", value:"arweave-id"}, {name:"Name", value:"${name}"}]) {id tags{name value}}}`;
     const res = await axios_1.default.post(`${arweaveInstance.api.config.protocol}://${arweaveInstance.api.config.host}:${arweaveInstance.api.config.port}/arql`, { query: query });
     let arweaveIDTxns = res.data.data.transactions; // Gets all transactions that claim 'arweaveID' 
@@ -192,7 +192,7 @@ async function getAddressFromArweaveID(name, arweaveInstance) {
     }
     return '';
 }
-exports.getAddressFromArweaveID = getAddressFromArweaveID;
+exports.check = check;
 async function getArweaveIDTxnsForAddress(address, arweaveInstance) {
     var query = `query { transactions(from:["${address}"],tags: [{name:"App-Name", value:"arweave-id"}]) {id tags{name value}}}`;
     let res = await axios_1.default

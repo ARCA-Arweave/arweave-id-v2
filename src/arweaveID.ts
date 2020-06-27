@@ -14,7 +14,7 @@ export interface ArweaveId {
 	avatarDataUri?: string
 }
 
-export async function retrieveArweaveIdFromAddress(address: string, arweaveInstance: IArweave): Promise<ArweaveId> {
+export async function get(address: string, arweaveInstance: IArweave): Promise<ArweaveId> {
 	let transactions = await getArweaveIDTxnsForAddress(address, arweaveInstance);
 	if (transactions.length == 0)
 		return { name: '' };
@@ -28,7 +28,7 @@ export async function retrieveArweaveIdFromAddress(address: string, arweaveInsta
 		let nameTxn = v2Txns[0];
 		// Find correct ArweaveID based on getAddressFromArweaveID rules
 		for (var j = 1; j < v2Txns.length; j++) {
-			if (address != await getAddressFromArweaveID(nameTxn.tags.filter(tag => tag['name'] == 'Name')[0]['value'], arweaveInstance)) {
+			if (address != await check(nameTxn.tags.filter(tag => tag['name'] == 'Name')[0]['value'], arweaveInstance)) {
 				nameTxn = v2Txns[j]; //Work backwards through the list of name transactions to exclude any made for a name already owned by another address
 			}
 			else {
@@ -95,11 +95,11 @@ export interface ISetReturn {
 	statusCode: number
 	statusMessage: string
 }
-export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveInstance: IArweave): Promise<ISetReturn> {
+export async function set(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveInstance: IArweave): Promise<ISetReturn> {
 
 	/* Verify that submitted name is not already taken */
 	let signingAddress = await arweaveInstance.wallets.ownerToAddress(jwk.n);
-	let idOwnerAddress = await getAddressFromArweaveID(arweaveIdData.name, arweaveInstance);
+	let idOwnerAddress = await check(arweaveIdData.name, arweaveInstance);
 	if ((idOwnerAddress !== '') && (idOwnerAddress !==signingAddress )){
 		return { txid: '', statusCode: 400, statusMessage: 'Name already taken'}
 	}
@@ -173,7 +173,7 @@ export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface
 	return { txid: transaction.id, statusCode: status.status, statusMessage: res.statusText };
 }
 
-export async function getAddressFromArweaveID(name: string, arweaveInstance: IArweave): Promise<string> {
+export async function check(name: string, arweaveInstance: IArweave): Promise<string> {
 	const query =
 		`query { transactions(tags: [{name:"App-Name", value:"arweave-id"}, {name:"Name", value:"${name}"}]) {id tags{name value}}}`;
 	const res = await axios.post(
