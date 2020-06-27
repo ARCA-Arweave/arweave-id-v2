@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.identiconEr = exports.getAddressFromArweaveID = exports.setArweaveData = exports.retrieveArweaveIdFromAddress = void 0;
+exports.getIdenticon = exports.getAddressFromArweaveID = exports.setArweaveData = exports.retrieveArweaveIdFromAddress = void 0;
 const axios_1 = __importDefault(require("axios"));
 const identicon_js_1 = __importDefault(require("identicon.js"));
 const jshashes_1 = require("jshashes");
@@ -95,15 +95,28 @@ async function retrieveArweaveIdFromAddress(address, arweaveInstance) {
 }
 exports.retrieveArweaveIdFromAddress = retrieveArweaveIdFromAddress;
 async function setArweaveData(arweaveIdData, jwk, arweaveInstance) {
+    /* Handle the dataUri string */
     var _a;
     var mediaType = '';
     var avatarData;
     switch ((_a = arweaveIdData.avatarDataUri) === null || _a === void 0 ? void 0 : _a.split(':')[0]) {
         // If dataURI format, check for optional media type or note unknown
         case 'data':
-            let imgData = arweaveIdData.avatarDataUri.split(',')[1];
-            avatarData = toUint8Array(imgData);
-            mediaType = arweaveIdData.avatarDataUri.split(';')[0].split(':')[1];
+            // Example dataUri strings:
+            // data:image/jpeg;base64,/9j/2wCEAAMCAgMC...
+            // data:image/png;base64,iVBORw0KGgoAAA...
+            // data:image/svg+xml;base64,PHN2ZyB4bWxucz0i...
+            // data:image/svg+xml,<?xml version="1.0...><svg xmlns="http://www.w3.org/2000/s...><path d="M12,19.2C9.5,19.2 7.29,17.92...
+            avatarData = arweaveIdData.avatarDataUri.split(',').slice(1).join(','); //removes first array element of ',' split
+            let meta = arweaveIdData.avatarDataUri.split(',')[0];
+            if (meta.split(';')[1]) {
+                console.log('base64 detected');
+                avatarData = toUint8Array(avatarData); //if base64 convert to binary using toUnit8Array(base64string)
+                mediaType = meta.split(';')[0].split(':')[1];
+            }
+            else {
+                mediaType = meta.split(':')[1];
+            }
             break;
         // If URL is detected, throw error
         case 'http':
@@ -117,6 +130,7 @@ async function setArweaveData(arweaveIdData, jwk, arweaveInstance) {
             // If provided URI is not valid, insert '0' in data field so transaction can be submitted
             avatarData = '0';
     }
+    /* Compose & send the transaction */
     let transaction = await arweaveInstance.createTransaction({ data: avatarData }, jwk);
     transaction.addTag('App-Name', 'arweave-id');
     transaction.addTag('App-Version', '0.0.2');
@@ -141,14 +155,12 @@ async function setArweaveData(arweaveIdData, jwk, arweaveInstance) {
     console.log('Transaction id is ' + transaction.id);
     const res = await arweaveInstance.transactions.post(transaction);
     const status = await arweaveInstance.transactions.getStatus(transaction.id);
-    status.status;
     return { txid: transaction.id, statusCode: status.status, statusMessage: res.statusText };
 }
 exports.setArweaveData = setArweaveData;
 async function getAddressFromArweaveID(name, arweaveInstance) {
     const query = `query { transactions(tags: [{name:"App-Name", value:"arweave-id"}, {name:"Name", value:"${name}"}]) {id tags{name value}}}`;
-    const res = await axios_1.default
-        .post(`${arweaveInstance.api.config.protocol}://${arweaveInstance.api.config.host}:${arweaveInstance.api.config.port}/arql`, { query: query });
+    const res = await axios_1.default.post(`${arweaveInstance.api.config.protocol}://${arweaveInstance.api.config.host}:${arweaveInstance.api.config.port}/arql`, { query: query });
     let arweaveIDTxns = res.data.data.transactions; // Gets all transactions that claim 'arweaveID' 
     /*
     if (arweaveIDTxns.length > 0){
@@ -181,10 +193,10 @@ async function getArweaveIDTxnsForAddress(address, arweaveInstance) {
         .post(`${arweaveInstance.api.config.protocol}://${arweaveInstance.api.config.host}:${arweaveInstance.api.config.port}/arql`, { query: query });
     return res.data.data.transactions;
 }
-function identiconEr(name) {
+function getIdenticon(name) {
     const hash = new jshashes_1.SHA256;
     let identiconString = new identicon_js_1.default(hash.hex(name)).toString();
     return `data:image/png;base64,${identiconString}`;
 }
-exports.identiconEr = identiconEr;
+exports.getIdenticon = getIdenticon;
 //# sourceMappingURL=arweaveID.js.map

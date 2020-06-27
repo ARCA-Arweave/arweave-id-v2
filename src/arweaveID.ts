@@ -1,6 +1,6 @@
 import IArweave from './types/IArweave';
 import { JWKInterface } from './types/JwkInterface';
-import axios, { AxiosResponse } from 'axios';
+import axios from 'axios';
 import identicon from 'identicon.js';
 import { SHA256 } from 'jshashes';
 const toUint8Array = require('base64-to-uint8array')
@@ -96,13 +96,20 @@ export interface ISetReturn {
 	statusMessage: string
 }
 export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveInstance: IArweave): Promise<ISetReturn> {
+
+	/* Handle the dataUri string */
+
 	var mediaType: string = ''
 	var avatarData: string
 	switch (arweaveIdData.avatarDataUri?.split(':')[0]) {
 		// If dataURI format, check for optional media type or note unknown
 		case 'data':
-			avatarData = arweaveIdData.avatarDataUri.split(',')[1]
-			// data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0c...
+			// Example dataUri strings:
+			// data:image/jpeg;base64,/9j/2wCEAAMCAgMC...
+			// data:image/png;base64,iVBORw0KGgoAAA...
+			// data:image/svg+xml;base64,PHN2ZyB4bWxucz0i...
+			// data:image/svg+xml,<?xml version="1.0...><svg xmlns="http://www.w3.org/2000/s...><path d="M12,19.2C9.5,19.2 7.29,17.92...
+			avatarData = arweaveIdData.avatarDataUri.split(',').slice(1).join(',') //removes first array element of ',' split
 			let meta = arweaveIdData.avatarDataUri.split(',')[0]
 			if(meta.split(';')[1]){
 				console.log('base64 detected')
@@ -125,6 +132,8 @@ export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface
 			avatarData = '0'
 
 	}
+
+	/* Compose & send the transaction */
 
 	let transaction = await arweaveInstance.createTransaction({ data: avatarData }, jwk);
 	transaction.addTag('App-Name', 'arweave-id');
@@ -154,7 +163,6 @@ export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface
 
 	const res = await arweaveInstance.transactions.post(transaction)
 	const status = await arweaveInstance.transactions.getStatus(transaction.id)
-	status.status
 
 	return { txid: transaction.id, statusCode: status.status, statusMessage: res.statusText };
 }
@@ -162,9 +170,10 @@ export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface
 export async function getAddressFromArweaveID(name: string, arweaveInstance: IArweave): Promise<string> {
 	const query =
 		`query { transactions(tags: [{name:"App-Name", value:"arweave-id"}, {name:"Name", value:"${name}"}]) {id tags{name value}}}`;
-	const res = await axios
-		.post(`${arweaveInstance.api.config.protocol}://${arweaveInstance.api.config.host}:${arweaveInstance.api.config.port}/arql`
-			, { query: query });
+	const res = await axios.post(
+		`${arweaveInstance.api.config.protocol}://${arweaveInstance.api.config.host}:${arweaveInstance.api.config.port}/arql`,
+		{ query: query }
+	);
 	let arweaveIDTxns = res.data.data.transactions  // Gets all transactions that claim 'arweaveID' 
 	/*
 	if (arweaveIDTxns.length > 0){
@@ -201,7 +210,7 @@ async function getArweaveIDTxnsForAddress(address: string, arweaveInstance: IArw
 	return res.data.data.transactions;
 }
 
-export function identiconEr(name: string): string {
+export function getIdenticon(name: string): string {
 	const hash = new SHA256;
 	let identiconString = new identicon(hash.hex(name)).toString();
 	return `data:image/png;base64,${identiconString}`;
