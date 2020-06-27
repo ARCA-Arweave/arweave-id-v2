@@ -95,8 +95,14 @@ async function retrieveArweaveIdFromAddress(address, arweaveInstance) {
 }
 exports.retrieveArweaveIdFromAddress = retrieveArweaveIdFromAddress;
 async function setArweaveData(arweaveIdData, jwk, arweaveInstance) {
-    /* Handle the dataUri string */
     var _a;
+    /* Verify that submitted name is not already taken */
+    let signingAddress = await arweaveInstance.wallets.ownerToAddress(jwk.n);
+    let idOwnerAddress = await getAddressFromArweaveID(arweaveIdData.name, arweaveInstance);
+    if ((idOwnerAddress !== '') && (idOwnerAddress !== signingAddress)) {
+        return { txid: '', statusCode: 400, statusMessage: 'Name already taken' };
+    }
+    /* Handle the dataUri string */
     var mediaType = '';
     var avatarData;
     switch ((_a = arweaveIdData.avatarDataUri) === null || _a === void 0 ? void 0 : _a.split(':')[0]) {

@@ -97,8 +97,14 @@ export interface ISetReturn {
 }
 export async function setArweaveData(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveInstance: IArweave): Promise<ISetReturn> {
 
+	/* Verify that submitted name is not already taken */
+	let signingAddress = await arweaveInstance.wallets.ownerToAddress(jwk.n);
+	let idOwnerAddress = await getAddressFromArweaveID(arweaveIdData.name, arweaveInstance);
+	if ((idOwnerAddress !== '') && (idOwnerAddress !==signingAddress )){
+		return { txid: '', statusCode: 400, statusMessage: 'Name already taken'}
+	}
+	
 	/* Handle the dataUri string */
-
 	var mediaType: string = ''
 	var avatarData: string
 	switch (arweaveIdData.avatarDataUri?.split(':')[0]) {
