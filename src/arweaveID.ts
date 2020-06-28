@@ -7,10 +7,8 @@ const toUint8Array = require('base64-to-uint8array')
 
 export interface ArweaveId {
 	name: string
-	email?: string
-	ethereum?: string
-	twitter?: string
-	discord?: string
+	url?: string
+	text?: string
 	avatarDataUri?: string
 }
 
@@ -43,10 +41,8 @@ export async function get(address: string, arweaveInstance: IArweave): Promise<A
 			let tag = nameTxn.tags[j]
 			switch (tag['name']) {
 				case 'Name': id.name = tag['value']; break;
-				case 'Email': id.email = tag['value']; break;
-				case 'Ethereum': id.ethereum = tag['value']; break;
-				case 'Twitter': id.twitter = tag['value']; break;
-				case 'Discord': id.discord = tag['value']; break;
+				case 'Url': id.url = tag['value']; break;
+				case 'Text': id.text = tag['value']; break;
 				case 'Content-Type': contentType = tag['value']; id.avatarDataUri = `data:${contentType};base64,${decodedAvatarData}`; break;
 				default:
 			}
@@ -59,32 +55,6 @@ export async function get(address: string, arweaveInstance: IArweave): Promise<A
 		}
 		// If no name field set, set name equal to Arweave address as default
 		else id.name = address;
-	}
-
-	// Check to see if any elements are not populated and then check to see if there are any V1 transactions corresponding to that element
-	if (id.email == undefined) {
-		let v1EmailTxns = v1Txns.filter(txn => txn.tags.filter(tag => tag['value'] === 'email').length > 0);
-		if (v1EmailTxns.length > 0) {
-			id.email = await arweaveInstance.transactions.getData(v1EmailTxns[0].id as string, { decode: true, string: true }) as string;
-		}
-	}
-	if (id.ethereum == undefined) {
-		let v1EthTxns = v1Txns.filter(txn => txn.tags.filter(tag => tag['value'] === 'ethereum').length > 0);
-		if (v1EthTxns.length > 0) {
-			id.ethereum = await arweaveInstance.transactions.getData(v1EthTxns[0].id as string, { decode: true, string: true }) as string;
-		}
-	}
-	if (id.twitter == undefined) {
-		let v1TwitterTxns = v1Txns.filter(txn => txn.tags.filter(tag => tag['value'] === 'twitter').length > 0);
-		if (v1TwitterTxns.length > 0) {
-			id.twitter = await arweaveInstance.transactions.getData(v1TwitterTxns[0].id as string, { decode: true, string: true }) as string;
-		}
-	}
-	if (id.discord == undefined) {
-		let v1DiscordTxns = v1Txns.filter(txn => txn.tags.filter(tag => tag['value'] === 'discord').length > 0);
-		if (v1DiscordTxns.length > 0) {
-			id.discord = await arweaveInstance.transactions.getData(v1DiscordTxns[0].id as string, { decode: true, string: true }) as string;
-		}
 	}
 
 	return id;
@@ -147,20 +117,6 @@ export async function set(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveIn
 	transaction.addTag('Name', arweaveIdData.name.trim());
 	mediaType.length===0 ? mediaType = 'none' : transaction.addTag('Content-Type', mediaType);
 	console.log('Media Type is ' + mediaType);
-
-	// Set additional fields if present on ArweaveID instance that is passed
-	if (arweaveIdData.email !== undefined) {
-		transaction.addTag('Email', arweaveIdData.email);
-	}
-	if (arweaveIdData.ethereum !== undefined) {
-		transaction.addTag('Ethereum', arweaveIdData.ethereum);
-	}
-	if (arweaveIdData.twitter !== undefined) {
-		transaction.addTag('Twitter', arweaveIdData.twitter);
-	}
-	if (arweaveIdData.discord !== undefined) {
-		transaction.addTag('Discord', arweaveIdData.discord);
-	}
 
 	await arweaveInstance.transactions.sign(transaction, jwk);
 

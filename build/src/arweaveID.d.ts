@@ -2,10 +2,8 @@ import IArweave from './types/IArweave';
 import { JWKInterface } from './types/JwkInterface';
 export interface ArweaveId {
     name: string;
-    email?: string;
-    ethereum?: string;
-    twitter?: string;
-    discord?: string;
+    url?: string;
+    text?: string;
     avatarDataUri?: string;
 }
 export declare function get(address: string, arweaveInstance: IArweave): Promise<ArweaveId>;

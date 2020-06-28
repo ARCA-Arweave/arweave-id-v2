@@ -31,7 +31,7 @@ describe('Test arweaveID.ts functions',()=>{
 
 		let res: ArweaveID.ArweaveId = await ArweaveID.get('CvbdmU66JFe5D14j2wYZEFSfO1hZY8dZy4W-9Ev2q0Y', arweave)
 
-		expect(res).toEqual({ "name": 'sparrow', "discord": 'Sparrow#2791' })
+		expect(res).toEqual({ "name": 'sparrow' })
 	}, 20000)
 
 
