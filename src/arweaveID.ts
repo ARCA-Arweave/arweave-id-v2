@@ -115,6 +115,12 @@ export async function set(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveIn
 	transaction.addTag('App-Name', 'arweave-id');
 	transaction.addTag('App-Version', '0.0.2');
 	transaction.addTag('Name', arweaveIdData.name.trim());
+	if ((arweaveIdData.text !== undefined) && (arweaveIdData.text !== '') {
+		transaction.addTag('Text', arweaveIdData.text);
+	}
+	if ((arweaveIdData.url !== undefined) && (arweaveIdData.url !== '') {
+		transaction.addTag('Url', arweaveIdData.url);
+	}
 	mediaType.length===0 ? mediaType = 'none' : transaction.addTag('Content-Type', mediaType);
 	console.log('Media Type is ' + mediaType);
 
