@@ -7,9 +7,7 @@ For an example of an app using this library, see the companion repo [arweave-id-
 
 For more information about Arweave see https://arweave.org
 
-## Usage
-
-### Basic Usage
+## Basic Usage
 ```javascript
 import Arweave from 'arweave/web'
 import { get } from 'arweave-id'
@@ -21,7 +19,7 @@ const userAddress = 'aoaJNC8NcKVfgwaUj6kyJi2hKrVGUsRHCGf8RhKnsic'
 let arId = await get(userAddress, arweave)
 console.log(arId.name) // 'Testy Mc Testface'
 ```
-
+## API
 ### ArweaveId interface
 ```javascript
 interface  ArweaveId {
@@ -32,7 +30,8 @@ interface  ArweaveId {
 }
 ```
 
-### `get(address: string, arweaveInstance: Arweave): Promise<ArweaveId>`
+### get
+`get(address: string, arweaveInstance: Arweave): Promise<ArweaveId>`
 Looks up the ArweaveID associated with a given Arweave address and returns all available data elements
 
 **Parameters**
@@ -42,7 +41,8 @@ Looks up the ArweaveID associated with a given Arweave address and returns all a
 **Returns**
 `Promise` that resolves to an `ArweaveId`interface object representing the ArweaveID attributes associated with the `address`
 
-### `set(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveInstance: Arweave ): Promise<ISetReturn>`
+### set 
+`set(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveInstance: Arweave ): Promise<ISetReturn>`
 Creates, signs, and submits an arweave-id transaction claiming ownership of the ArweaveId provided.
 
 **Parameters**
@@ -56,7 +56,8 @@ Creates, signs, and submits an arweave-id transaction claiming ownership of the 
 2. `statusCode` - `number` - The HTTP status code received back from the Arweave node (e.g. 200 if transaction successfully posted)
 3. `statusMessage` - `string` - The status message associated with the HTTP status code response (e.g. 'OK' if transaction successfully posted)
 
-### `check(name: string, arweaveInstance: IArweave): Promise<string>`
+### check
+`check(name: string, arweaveInstance: IArweave): Promise<string>`
 Look up an arweave-id name to see if it's available, returns an empty string `''` or the owners address.
 
 **Parameters**
@@ -66,7 +67,8 @@ Look up an arweave-id name to see if it's available, returns an empty string `''
 **Returns**
 `Promise` that resolves to a `string` representing the address of the wallet that owns the ArweaveID `name` or blank string if name is available
 
-### `getIdenticon(name: string): string`
+### getIdenticon
+`getIdenticon(name: string): string`
 This function is provided as a method of generating an avatar for the user. Example usage, when the optional avatar has not been set.
 
 **Parameters

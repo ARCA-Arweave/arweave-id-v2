@@ -7,6 +7,11 @@ exports.getIdenticon = exports.check = exports.set = exports.get = void 0;
 const identicon_js_1 = __importDefault(require("identicon.js"));
 const jshashes_1 = require("jshashes");
 const toUint8Array = require('base64-to-uint8array');
+/**
+ * Function to get an ArweaveId object for the supplied arweave address.
+ * @param address user's wallet address to look up
+ * @param arweaveInstance an instance of the Arweave object
+ */
 async function get(address, arweaveInstance) {
     let transactions = await getArweaveIDTxnsForAddress(address, arweaveInstance);
     if (transactions.length == 0)
@@ -62,6 +67,12 @@ async function get(address, arweaveInstance) {
     return id;
 }
 exports.get = get;
+/**
+ * Function to write a new/updated ArweaveId object
+ * @param arweaveIdData the arweave-id data to write
+ * @param jwk the user's wallet to pay for the transaction
+ * @param arweaveInstance an instance of the Arweave object
+ */
 async function set(arweaveIdData, jwk, arweaveInstance) {
     var _a;
     /* Verify that submitted name is not already taken */
@@ -146,6 +157,10 @@ async function getArweaveIDTxnsForAddress(address, arweaveInstance) {
     let res = await arweaveInstance.api.post('arql', { query: query });
     return res.data.data.transactions;
 }
+/**
+ * Generate an avatar image from a username. For example, can be used as a fallback for when no image is supplied.
+ * @param name arweave-id name to turn into an identicon avatar
+ */
 function getIdenticon(name) {
     const hash = new jshashes_1.SHA256;
     let identiconString = new identicon_js_1.default(hash.hex(name)).toString();
