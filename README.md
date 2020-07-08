@@ -1,19 +1,34 @@
-# arweave-id-v2
+# arweave-id Version 2
+
+This library serves a developer's interface to arweave-id. Arweave-id is an identity service for the permaweb a.k.a. Arweave open web. 
+
+For more information about Arweave see https://arweave.org
 
 ## Usage
 
-### ArweaveId interface
-
+### Basic Usage
 ```javascript
-ArweaveId {
-    name: string //Arweave ID
-    email?: string  //email address
-    ethereum?: string // Ethereum address
-    twitter?: string //twitter handle
-    discord?: string //Discord nickname
-    avatarDataUri?: string //A dataURI representing the avatar of the user
+import Arweave from 'arweave/web'
+import * as ArId from 'arweave-id'
+
+const arweave = Arweave.init({})
+const userAddress = 'aoaJNC8NcKVfgwaUj6kyJi2hKrVGUsRHCGf8RhKnsic'
+
+// then inside async function:
+let userId = await ArId.get(userAddress, arweave)
+console.log(userId.name) // 'Testy Mc Testface'
+```
+
+### ArweaveId interface
+```javascript
+interface  ArweaveId {
+  name:  string // username
+  url?:  string // an optional http link for the user
+  text?:  string // optional freeform text
+  avatarDataUri?:  string // optional dataUri containing the user's avatar
 }
 ```
+
 ### `get(address: string, arweaveInstance: Arweave): Promise<ArweaveId>`
 Looks up the ArweaveID associated with a given Arweave address and returns all available data elements
 
@@ -22,29 +37,24 @@ Looks up the ArweaveID associated with a given Arweave address and returns all a
 2. `arweaveInstance` - `Arweave`: an `arweave` object generated from the [`arweave` package](https://www.npmjs.com/package/arweave)
 
 **Returns**
-`Promise` that resolves to an `ArweaveId`interface object representing the ArweaveID attributes associated with the `address` 
+`Promise` that resolves to an `ArweaveId`interface object representing the ArweaveID attributes associated with the `address`
 
 ### `set(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveInstance: Arweave ): Promise<ISetReturn>`
-Creates, signs, and submits an ArweaveID transaction claiming ownership of the ArweaveID provided.
+Creates, signs, and submits an arweave-id transaction claiming ownership of the ArweaveId provided.
 
 **Parameters**
-1. `arweaveIdData` - `ArweaveId`: an `ArweaveId` object with values corresponding to the Arweave ID elements to be posted to Arweave
-2. `jwk` - `JWKInterface`: a JSON object represeting a private key in [JWK](https://docs.arweave.org/developers/server/http-api#key-format) format
+1. `arweaveIdData` - `ArweaveId`: an `ArweaveId` object to be written to the permaweb.
+2. `jwk` - `JWKInterface`: the user's arweave wallet [JWK](https://docs.arweave.org/developers/server/http-api#key-format)
 3. `arweaveInstance` - `Arweave`: an `arweave` object generated from the [`arweave` package](https://www.npmjs.com/package/arweave)
 
 **Returns**
 `Promise` that resolves to an `ISetReturn` object
-1. `txid` - `string` - The transaction ID generated for the transaction - will be a blank string if the data can't be posted
+1. `txid` - `string` - The transaction ID generated for the transaction. Treat this txid like you would for any other arweave transaction. N.B. This will be a blank string if the data cannot be posted.
 2. `statusCode` - `number` - The HTTP status code received back from the Arweave node (e.g. 200 if transaction successfully posted)
 3. `statusMessage` - `string` - The status message associated with the HTTP status code response (e.g. 'OK' if transaction successfully posted)
 
-**Notes:**
-1. If no `name` property is provided in `arweaveIdData`, the `name` property will be set to the address of the wallet signing the transaction as a default.
-2. If no `avatarDataUri` property is provided in `arweaveIdData`, the `data` element of the transaction submitted to Arweave will be set to `'0'`.
-
-
 ### `check(name: string, arweaveInstance: IArweave): Promise<string>`
-Looks up an ArweaveID name to see if it's available and returns the owning address if not.
+Look up an arweave-id name to see if it's available, returns an empty string `''` or the owners address.
 
 **Parameters**
 1. `name` - `string` - The ArweaveID to be looked up
@@ -54,9 +64,10 @@ Looks up an ArweaveID name to see if it's available and returns the owning addre
 `Promise` that resolves to a `string` representing the address of the wallet that owns the ArweaveID `name` or blank string if name is available
 
 ### `getIdenticon(name: string): string`
+This function is provided as a method of generating an avatar for the user.
 
 **Parameters
 1. `name` - a string to generate an identicon for
 
 **Returns**
-A Base64 encoded `string` representing an identicon with a image/png MIME-type which can be used as the avatar for an ArweaveID
+A [data URI](https://en.wikipedia.org/wiki/Data_URI_scheme) containing the indenticon image. This can be directly set to an `img` tag's `src` property, for example. For reference, the enclosed image format is a base64 encoded PNG, of pixel size 64x64.

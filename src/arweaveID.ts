@@ -11,6 +11,11 @@ export interface ArweaveId {
 	avatarDataUri?: string
 }
 
+/**
+ * Function to get an ArweaveId object for the supplied arweave address.
+ * @param address user's wallet address to look up
+ * @param arweaveInstance an instance of the Arweave object
+ */
 export async function get(address: string, arweaveInstance: IArweave): Promise<ArweaveId> {
 	let transactions = await getArweaveIDTxnsForAddress(address, arweaveInstance);
 	if (transactions.length == 0)
@@ -64,6 +69,12 @@ export interface ISetReturn {
 	statusCode: number
 	statusMessage: string
 }
+/**
+ * Function to write a new/updated ArweaveId object
+ * @param arweaveIdData the arweave-id data to write
+ * @param jwk the user's wallet to pay for the transaction
+ * @param arweaveInstance an instance of the Arweave object
+ */
 export async function set(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveInstance: IArweave): Promise<ISetReturn> {
 
 	/* Verify that submitted name is not already taken */
@@ -159,6 +170,10 @@ async function getArweaveIDTxnsForAddress(address: string, arweaveInstance: IArw
 	return res.data.data.transactions;
 }
 
+/**
+ * Generate an avatar image from a username. For example, can be used as a fallback for when no image is supplied.
+ * @param name arweave-id name to turn into an identicon avatar
+ */
 export function getIdenticon(name: string): string {
 	const hash = new SHA256;
 	let identiconString = new identicon(hash.hex(name)).toString();
