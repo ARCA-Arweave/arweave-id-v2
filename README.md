@@ -9,23 +9,23 @@ For more information about Arweave see https://arweave.org
 ### Basic Usage
 ```javascript
 import Arweave from 'arweave/web'
-import * as ArId from 'arweave-id'
+import { get } from 'arweave-id'
 
 const arweave = Arweave.init({})
 const userAddress = 'aoaJNC8NcKVfgwaUj6kyJi2hKrVGUsRHCGf8RhKnsic'
 
-// then inside async function:
-let userId = await ArId.get(userAddress, arweave)
-console.log(userId.name) // 'Testy Mc Testface'
+// then inside an async function:
+let arId = await get(userAddress, arweave)
+console.log(arId.name) // 'Testy Mc Testface'
 ```
 
 ### ArweaveId interface
 ```javascript
 interface  ArweaveId {
-  name:  string // username
-  url?:  string // an optional http link for the user
-  text?:  string // optional freeform text
-  avatarDataUri?:  string // optional dataUri containing the user's avatar
+  name: string     // username
+  url?: string     // an optional http link for the user
+  text?: string    // optional freeform text
+  avatarDataUri?: string    // optional data URI containing the user's avatar
 }
 ```
 
@@ -64,7 +64,7 @@ Look up an arweave-id name to see if it's available, returns an empty string `''
 `Promise` that resolves to a `string` representing the address of the wallet that owns the ArweaveID `name` or blank string if name is available
 
 ### `getIdenticon(name: string): string`
-This function is provided as a method of generating an avatar for the user.
+This function is provided as a method of generating an avatar for the user. Example usage, when the optional avatar has not been set.
 
 **Parameters
 1. `name` - a string to generate an identicon for
