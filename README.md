@@ -45,12 +45,12 @@ Looks up the ArweaveID associated with a given Arweave address and returns all a
 `set(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveInstance: Arweave ): Promise<ISetReturn>`
 Creates, signs, and submits an arweave-id transaction claiming ownership of the ArweaveId provided.
 
-**Parameters**
+#### Parameters
 1. `arweaveIdData` - `ArweaveId`: an `ArweaveId` object to be written to the permaweb.
 2. `jwk` - `JWKInterface`: the user's arweave wallet [JWK](https://docs.arweave.org/developers/server/http-api#key-format)
 3. `arweaveInstance` - `Arweave`: an `arweave` object generated from the [`arweave` package](https://www.npmjs.com/package/arweave)
 
-**Returns**
+#### Returns
 `Promise` that resolves to an `ISetReturn` object
 1. `txid` - `string` - The transaction ID generated for the transaction. Treat this txid like you would for any other arweave transaction. N.B. This will be a blank string if the data cannot be posted.
 2. `statusCode` - `number` - The HTTP status code received back from the Arweave node (e.g. 200 if transaction successfully posted)
@@ -60,19 +60,19 @@ Creates, signs, and submits an arweave-id transaction claiming ownership of the 
 `check(name: string, arweaveInstance: IArweave): Promise<string>`
 Look up an arweave-id name to see if it's available, returns an empty string `''` or the owners address.
 
-**Parameters**
+#### Parameters
 1. `name` - `string` - The ArweaveID to be looked up
 2. `arweaveInstance` - `Arweave`: an `arweave` object generated from the [`arweave` package](https://www.npmjs.com/package/arweave)
 
-**Returns**
+#### Returns
 `Promise` that resolves to a `string` representing the address of the wallet that owns the ArweaveID `name` or blank string if name is available
 
 ### getIdenticon
 `getIdenticon(name: string): string`
 This function is provided as a method of generating an avatar for the user. Example usage, when the optional avatar has not been set.
 
-**Parameters
+#### Parameters
 1. `name` - a string to generate an identicon for
 
-**Returns**
+#### Returns
 A [data URI](https://en.wikipedia.org/wiki/Data_URI_scheme) containing the indenticon image. This can be directly set to an `img` tag's `src` property, for example. For reference, the enclosed image format is a base64 encoded PNG, of pixel size 64x64.
