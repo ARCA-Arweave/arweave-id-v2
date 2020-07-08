@@ -8,6 +8,9 @@ For an example of an app using this library, see the companion repo [arweave-id-
 For more information about Arweave see https://arweave.org
 
 ## Basic Usage
+
+Install using `npm install arweave-id` then do
+
 ```javascript
 import Arweave from 'arweave/web'
 import { get } from 'arweave-id'
@@ -32,6 +35,7 @@ interface  ArweaveId {
 
 ### get
 `get(address: string, arweaveInstance: Arweave): Promise<ArweaveId>`
+
 Looks up the ArweaveID associated with a given Arweave address and returns all available data elements
 
 **Parameters**
@@ -43,6 +47,7 @@ Looks up the ArweaveID associated with a given Arweave address and returns all a
 
 ### set 
 `set(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveInstance: Arweave ): Promise<ISetReturn>`
+
 Creates, signs, and submits an arweave-id transaction claiming ownership of the ArweaveId provided.
 
 #### Parameters
@@ -58,6 +63,7 @@ Creates, signs, and submits an arweave-id transaction claiming ownership of the 
 
 ### check
 `check(name: string, arweaveInstance: IArweave): Promise<string>`
+
 Look up an arweave-id name to see if it's available, returns an empty string `''` or the owners address.
 
 #### Parameters
@@ -69,6 +75,7 @@ Look up an arweave-id name to see if it's available, returns an empty string `''
 
 ### getIdenticon
 `getIdenticon(name: string): string`
+
 This function is provided as a method of generating an avatar for the user. Example usage, when the optional avatar has not been set.
 
 #### Parameters
