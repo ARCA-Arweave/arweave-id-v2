@@ -1,6 +1,5 @@
 import IArweave from './types/IArweave';
 import { JWKInterface } from './types/JwkInterface';
-import axios from 'axios';
 import identicon from 'identicon.js';
 import { SHA256 } from 'jshashes';
 const toUint8Array = require('base64-to-uint8array')
@@ -135,32 +134,16 @@ export async function set(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveIn
 	return { txid: transaction.id, statusCode: status.status, statusMessage: res.statusText };
 }
 
+/**
+ * Checks whether a name is aleady in use. Respects App-Version: 0.0.1 names set before date XXXX-XX-XX
+ * @param name arweave-id name to search
+ * @param arweaveInstance instance of arweave
+ */
 export async function check(name: string, arweaveInstance: IArweave): Promise<string> {
 	const query =
 		`query { transactions(tags: [{name:"App-Name", value:"arweave-id"}, {name:"Name", value:"${name}"}]) {id tags{name value}}}`;
-	const res = await axios.post(
-		`${arweaveInstance.api.config.protocol}://${arweaveInstance.api.config.host}:${arweaveInstance.api.config.port}/arql`,
-		{ query: query }
-	);
+	let res = await arweaveInstance.api.post('arql', { query: query })
 	let arweaveIDTxns = res.data.data.transactions  // Gets all transactions that claim 'arweaveID' 
-	/*
-	if (arweaveIDTxns.length > 0){
-		var nameTxn = await arweaveInstance.transactions.get(arweaveIDTxns[arweaveIDTxns.length-1].id)  //Set owning transaction as earliest transaction by earliest blocktime
-		do {
-		var owner = await arweaveInstance.wallets.ownerToAddress(nameTxn.owner);
-		let ownerTxns = await getArweaveIDTxnsForAddress(owner, arweaveInstance);
-		let ownerNameChanges = ownerTxns.filter(txn => txn.tags.filter(tag => tag['type'] === 'Name' && tag['value'] !== arweaveID).length > 0)
-		if (ownerNameChanges.length == 0) return owner;  // If oldest claimant has never changed to another name, owner is found 
-		let ownerNameChangeTxnIndex = ownerTxns.findIndex(txn => txn.id == ownerNameChanges[ownerNameChanges.length-1].id)
-		var j = arweaveIDTxns.length-1
-		do{
-			arweaveIDTxns.pop();		//Remove all name changes from oldest to newest up to when owner released name
-			j--;
-		} while (arweaveIDTxns[j].id != ownerTxns[ownerNameChangeTxnIndex+1].id)	
-		arweaveIDTxns.pop();			//Remove previous owner's claim
-		var nameTxn = await arweaveInstance.transactions.get(arweaveIDTxns[arweaveIDTxns.length-1].id) // Set owning transaction to remaining earliest transaction
-		} while (true);
-	}*/
 
 	if (arweaveIDTxns.length > 0) {
 		let nameTxn = await arweaveInstance.transactions.get(arweaveIDTxns[arweaveIDTxns.length - 1].id)
@@ -172,9 +155,7 @@ export async function check(name: string, arweaveInstance: IArweave): Promise<st
 async function getArweaveIDTxnsForAddress(address: string, arweaveInstance: IArweave): Promise<any[]> {
 	var query =
 		`query { transactions(from:["${address}"],tags: [{name:"App-Name", value:"arweave-id"}]) {id tags{name value}}}`;
-	let res = await axios
-		.post(`${arweaveInstance.api.config.protocol}://${arweaveInstance.api.config.host}:${arweaveInstance.api.config.port}/arql`
-			, { query: query });
+	let res = await arweaveInstance.api.post('arql', { query: query })
 	return res.data.data.transactions;
 }
 

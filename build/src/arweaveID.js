@@ -4,7 +4,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getIdenticon = exports.check = exports.set = exports.get = void 0;
-const axios_1 = __importDefault(require("axios"));
 const identicon_js_1 = __importDefault(require("identicon.js"));
 const jshashes_1 = require("jshashes");
 const toUint8Array = require('base64-to-uint8array');
@@ -110,6 +109,12 @@ async function set(arweaveIdData, jwk, arweaveInstance) {
     transaction.addTag('App-Name', 'arweave-id');
     transaction.addTag('App-Version', '0.0.2');
     transaction.addTag('Name', arweaveIdData.name.trim());
+    if ((arweaveIdData.text !== undefined) && (arweaveIdData.text !== '')) {
+        transaction.addTag('Text', arweaveIdData.text);
+    }
+    if ((arweaveIdData.url !== undefined) && (arweaveIdData.url !== '')) {
+        transaction.addTag('Url', arweaveIdData.url);
+    }
     mediaType.length === 0 ? mediaType = 'none' : transaction.addTag('Content-Type', mediaType);
     console.log('Media Type is ' + mediaType);
     await arweaveInstance.transactions.sign(transaction, jwk);
@@ -120,28 +125,15 @@ async function set(arweaveIdData, jwk, arweaveInstance) {
     return { txid: transaction.id, statusCode: status.status, statusMessage: res.statusText };
 }
 exports.set = set;
+/**
+ * Checks whether a name is aleady in use. Respects App-Version: 0.0.1 names set before date XXXX-XX-XX
+ * @param name arweave-id name to search
+ * @param arweaveInstance instance of arweave
+ */
 async function check(name, arweaveInstance) {
     const query = `query { transactions(tags: [{name:"App-Name", value:"arweave-id"}, {name:"Name", value:"${name}"}]) {id tags{name value}}}`;
-    const res = await axios_1.default.post(`${arweaveInstance.api.config.protocol}://${arweaveInstance.api.config.host}:${arweaveInstance.api.config.port}/arql`, { query: query });
+    let res = await arweaveInstance.api.post('arql', { query: query });
     let arweaveIDTxns = res.data.data.transactions; // Gets all transactions that claim 'arweaveID' 
-    /*
-    if (arweaveIDTxns.length > 0){
-        var nameTxn = await arweaveInstance.transactions.get(arweaveIDTxns[arweaveIDTxns.length-1].id)  //Set owning transaction as earliest transaction by earliest blocktime
-        do {
-        var owner = await arweaveInstance.wallets.ownerToAddress(nameTxn.owner);
-        let ownerTxns = await getArweaveIDTxnsForAddress(owner, arweaveInstance);
-        let ownerNameChanges = ownerTxns.filter(txn => txn.tags.filter(tag => tag['type'] === 'Name' && tag['value'] !== arweaveID).length > 0)
-        if (ownerNameChanges.length == 0) return owner;  // If oldest claimant has never changed to another name, owner is found
-        let ownerNameChangeTxnIndex = ownerTxns.findIndex(txn => txn.id == ownerNameChanges[ownerNameChanges.length-1].id)
-        var j = arweaveIDTxns.length-1
-        do{
-            arweaveIDTxns.pop();		//Remove all name changes from oldest to newest up to when owner released name
-            j--;
-        } while (arweaveIDTxns[j].id != ownerTxns[ownerNameChangeTxnIndex+1].id)
-        arweaveIDTxns.pop();			//Remove previous owner's claim
-        var nameTxn = await arweaveInstance.transactions.get(arweaveIDTxns[arweaveIDTxns.length-1].id) // Set owning transaction to remaining earliest transaction
-        } while (true);
-    }*/
     if (arweaveIDTxns.length > 0) {
         let nameTxn = await arweaveInstance.transactions.get(arweaveIDTxns[arweaveIDTxns.length - 1].id);
         return await arweaveInstance.wallets.ownerToAddress(nameTxn.owner);
@@ -151,8 +143,7 @@ async function check(name, arweaveInstance) {
 exports.check = check;
 async function getArweaveIDTxnsForAddress(address, arweaveInstance) {
     var query = `query { transactions(from:["${address}"],tags: [{name:"App-Name", value:"arweave-id"}]) {id tags{name value}}}`;
-    let res = await axios_1.default
-        .post(`${arweaveInstance.api.config.protocol}://${arweaveInstance.api.config.host}:${arweaveInstance.api.config.port}/arql`, { query: query });
+    let res = await arweaveInstance.api.post('arql', { query: query });
     return res.data.data.transactions;
 }
 function getIdenticon(name) {
