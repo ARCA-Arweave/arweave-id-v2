@@ -7,6 +7,8 @@ exports.getIdenticon = exports.check = exports.set = exports.get = void 0;
 const identicon_js_1 = __importDefault(require("identicon.js"));
 const jshashes_1 = require("jshashes");
 const toUint8Array = require('base64-to-uint8array');
+const xss_1 = require("xss");
+const v1claimed_1 = __importDefault(require("./v1claimed"));
 /**
  * Function to get an ArweaveId object for the supplied arweave address.
  * @param address user's wallet address to look up
@@ -39,13 +41,13 @@ async function get(address, arweaveInstance) {
             let tag = nameTxn.tags[j];
             switch (tag['name']) {
                 case 'Name':
-                    id.name = tag['value'];
+                    id.name = xss_1.filterXSS(tag['value']);
                     break;
                 case 'Url':
-                    id.url = tag['value'];
+                    id.url = xss_1.filterXSS(tag['value']);
                     break;
                 case 'Text':
-                    id.text = tag['value'];
+                    id.text = xss_1.filterXSS(tag['value']);
                     break;
                 case 'Content-Type':
                     contentType = tag['value'];
@@ -119,12 +121,12 @@ async function set(arweaveIdData, jwk, arweaveInstance) {
     let transaction = await arweaveInstance.createTransaction({ data: avatarData }, jwk);
     transaction.addTag('App-Name', 'arweave-id');
     transaction.addTag('App-Version', '0.0.2');
-    transaction.addTag('Name', arweaveIdData.name.trim());
+    transaction.addTag('Name', xss_1.filterXSS(arweaveIdData.name.trim()));
     if ((arweaveIdData.text !== undefined) && (arweaveIdData.text !== '')) {
-        transaction.addTag('Text', arweaveIdData.text);
+        transaction.addTag('Text', xss_1.filterXSS(arweaveIdData.text));
     }
     if ((arweaveIdData.url !== undefined) && (arweaveIdData.url !== '')) {
-        transaction.addTag('Url', arweaveIdData.url);
+        transaction.addTag('Url', xss_1.filterXSS(arweaveIdData.url));
     }
     mediaType.length === 0 ? mediaType = 'none' : transaction.addTag('Content-Type', mediaType);
     console.log('Media Type is ' + mediaType);
@@ -142,7 +144,11 @@ exports.set = set;
  * @param arweaveInstance instance of arweave
  */
 async function check(name, arweaveInstance) {
-    const query = `query { transactions(tags: [{name:"App-Name", value:"arweave-id"}, {name:"Name", value:"${name}"}]) {id tags{name value}}}`;
+    let _name = xss_1.filterXSS(name);
+    if (v1claimed_1.default[_name] !== undefined) {
+        return v1claimed_1.default[_name];
+    }
+    const query = `query { transactions(tags: [{name:"App-Name", value:"arweave-id"}, {name:"Name", value:"${_name}"}]) {id tags{name value}}}`;
     let res = await arweaveInstance.api.post('arql', { query: query });
     let arweaveIDTxns = res.data.data.transactions; // Gets all transactions that claim 'arweaveID' 
     if (arweaveIDTxns.length > 0) {

@@ -14,6 +14,8 @@ describe('Test arweaveID.ts functions',()=>{
     logging: false,     // Enable network request logging
 	})
 
+	/* Test 'get' function */
+
 	it('get gets a wallet\'s name for an account with a V2 ID', async () => {
 		expect(1)
 
@@ -37,6 +39,7 @@ describe('Test arweaveID.ts functions',()=>{
 		expect(res).toEqual({ "name": 'sparrow' })
 	}, 20000)
 
+	/* Test 'set' function */
 
 	it('set accepts name & PNG avatar, & returns valid ISetReturn', async () => {
 		expect(1)
@@ -79,11 +82,19 @@ describe('Test arweaveID.ts functions',()=>{
 		expect(res.statusMessage).toEqual('Name already taken')
 	}, 20000)
 
-	it('checks if a name is already taken, where name exists', async ()=>{
+	/* Test 'check' function */
+
+	it('checks if a v2 name is already taken, where name exists', async ()=>{
 		expect(1)
 		let address = await ArweaveID.check('Ros McMahon',arweave)
 
 		expect(address).toEqual('v2XXwq_FvVqH2KR4p_x8H-SQ7rDwZBbykSv-59__Avc')
+	}, 20000)
+	it('checks if a v1 name is already taken, where name exists', async ()=>{
+		expect(1)
+		let address = await ArweaveID.check('benji',arweave)
+
+		expect(address).toEqual('ASd5vJJaEbwHQHQVTGQ9sh3kDb-EIjBL39r-YTOt9vM')
 	}, 20000)
 	it('checks if a name is already taken, where name does not exists', async ()=>{
 		expect(1)
@@ -91,7 +102,8 @@ describe('Test arweaveID.ts functions',()=>{
 
 		expect(address).toEqual('')
 	}, 20000)
-})
+
+})//end describe
 
 
 

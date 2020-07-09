@@ -3,6 +3,8 @@ import { JWKInterface } from './types/JwkInterface';
 import identicon from 'identicon.js';
 import { SHA256 } from 'jshashes';
 const toUint8Array = require('base64-to-uint8array')
+import { filterXSS } from 'xss'
+import v1claimed from './v1claimed'
 
 export interface ArweaveId {
 	name: string
@@ -44,9 +46,9 @@ export async function get(address: string, arweaveInstance: IArweave): Promise<A
 		for (var j = 0; j < nameTxn.tags.length; j++) {
 			let tag = nameTxn.tags[j]
 			switch (tag['name']) {
-				case 'Name': id.name = tag['value']; break;
-				case 'Url': id.url = tag['value']; break;
-				case 'Text': id.text = tag['value']; break;
+				case 'Name': id.name = filterXSS(tag['value']); break;
+				case 'Url': id.url = filterXSS(tag['value']); break;
+				case 'Text': id.text = filterXSS(tag['value']); break;
 				case 'Content-Type': contentType = tag['value']; id.avatarDataUri = `data:${contentType};base64,${decodedAvatarData}`; break;
 				default:
 			}
@@ -124,12 +126,12 @@ export async function set(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveIn
 	let transaction = await arweaveInstance.createTransaction({ data: avatarData }, jwk);
 	transaction.addTag('App-Name', 'arweave-id');
 	transaction.addTag('App-Version', '0.0.2');
-	transaction.addTag('Name', arweaveIdData.name.trim());
+	transaction.addTag('Name', filterXSS(arweaveIdData.name.trim()));
 	if ((arweaveIdData.text !== undefined) && (arweaveIdData.text !== '')) {
-		transaction.addTag('Text', arweaveIdData.text);
+		transaction.addTag('Text', filterXSS(arweaveIdData.text));
 	}
 	if ((arweaveIdData.url !== undefined) && (arweaveIdData.url !== '')) {
-		transaction.addTag('Url', arweaveIdData.url);
+		transaction.addTag('Url', filterXSS(arweaveIdData.url));
 	}
 	mediaType.length===0 ? mediaType = 'none' : transaction.addTag('Content-Type', mediaType);
 	console.log('Media Type is ' + mediaType);
@@ -151,8 +153,14 @@ export async function set(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveIn
  * @param arweaveInstance instance of arweave
  */
 export async function check(name: string, arweaveInstance: IArweave): Promise<string> {
+	let _name = filterXSS(name)
+
+	if(v1claimed[_name] !== undefined){
+		return v1claimed[_name]
+	}
+
 	const query =
-		`query { transactions(tags: [{name:"App-Name", value:"arweave-id"}, {name:"Name", value:"${name}"}]) {id tags{name value}}}`;
+		`query { transactions(tags: [{name:"App-Name", value:"arweave-id"}, {name:"Name", value:"${_name}"}]) {id tags{name value}}}`;
 	let res = await arweaveInstance.api.post('arql', { query: query })
 	let arweaveIDTxns = res.data.data.transactions  // Gets all transactions that claim 'arweaveID' 
 
