@@ -12,6 +12,9 @@ export interface ArweaveId {
  * @param arweaveInstance an instance of the Arweave object
  */
 export declare function get(address: string, arweaveInstance: IArweave): Promise<ArweaveId>;
+/**
+ * The return type for 'set' function
+ */
 export interface ISetReturn {
     txid: string;
     statusCode: number;

@@ -51,7 +51,7 @@ describe('Test arweaveID.ts functions',()=>{
 		let res: ArweaveID.ISetReturn = await ArweaveID.set(aridData,jwk,arweave)
 
 		expect(res.txid).toHaveLength(43) //<= I am just testing for a string 43 characters long here
-		expect(res.statusCode).toBeGreaterThanOrEqual(200)
+		expect(res.statusCode).toBeGreaterThanOrEqual(202)
 		expect(res.statusMessage).toHaveLength
 	}, 20000)
 
@@ -65,7 +65,7 @@ describe('Test arweaveID.ts functions',()=>{
 		let res: ArweaveID.ISetReturn = await ArweaveID.set(aridData,jwk,arweave)
 
 		expect(res.txid).toHaveLength(43) //<= I am just testing for a string 43 characters long here
-		expect(res.statusCode).toBeGreaterThanOrEqual(200)
+		expect(res.statusCode).toBeGreaterThanOrEqual(202)
 		expect(res.statusMessage).toHaveLength
 	}, 20000)
 
@@ -80,6 +80,20 @@ describe('Test arweaveID.ts functions',()=>{
 		expect(res.txid).toHaveLength(0) //<= I am just testing for a string 43 characters long here
 		expect(res.statusCode).toBeGreaterThanOrEqual(400)
 		expect(res.statusMessage).toEqual('Name already taken')
+	}, 20000)
+	
+	it('set sanitizes bad data uri, & returns valid ISetReturn', async () => {
+		expect(1)
+		let aridData: ArweaveID.ArweaveId = {
+			name: TEST_JWK_NAME, 
+			avatarDataUri: 'data:text/html;base64,IDxzY3JpcHQ+YWxlcnQoIjEzMzdoYWNrIik7PC9zY3JpcHQ+' 
+		} //this dataUri contains: <script>alert("1337hack");</script>
+
+		let res: ArweaveID.ISetReturn = await ArweaveID.set(aridData,jwk,arweave)
+
+		expect(res.txid).toHaveLength(0) //<= I am just testing for a string 43 characters long here
+		expect(res.statusCode).toBeGreaterThanOrEqual(202)
+		expect(res.statusMessage).toEqual('Invalid data URI')
 	}, 20000)
 
 	/* Test 'check' function */

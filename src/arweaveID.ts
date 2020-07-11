@@ -3,8 +3,8 @@ import { JWKInterface } from './types/JwkInterface';
 import identicon from 'identicon.js';
 import { SHA256 } from 'jshashes';
 const toUint8Array = require('base64-to-uint8array')
-import { filterXSS } from 'xss'
 import v1claimed from './v1claimed'
+import { filterXSS } from 'xss'
 
 export interface ArweaveId {
 	name: string
@@ -12,6 +12,7 @@ export interface ArweaveId {
 	text?: string
 	avatarDataUri?: string
 }
+
 
 /**
  * Function to get an ArweaveId object for the supplied arweave address.
@@ -41,7 +42,7 @@ export async function get(address: string, arweaveInstance: IArweave): Promise<A
 			}
 		}
 		let encodedAvatarData = await arweaveInstance.transactions.getData(nameTxn.id, {decode: true}) as Uint8Array;
-		let decodedAvatarData = arweaveInstance.utils.bufferTob64(encodedAvatarData);
+		let decodedAvatarData = filterXSS( arweaveInstance.utils.bufferTob64(encodedAvatarData) )
 		let contentType = ''
 		for (var j = 0; j < nameTxn.tags.length; j++) {
 			let tag = nameTxn.tags[j]
@@ -49,7 +50,12 @@ export async function get(address: string, arweaveInstance: IArweave): Promise<A
 				case 'Name': id.name = filterXSS(tag['value']); break;
 				case 'Url': id.url = filterXSS(tag['value']); break;
 				case 'Text': id.text = filterXSS(tag['value']); break;
-				case 'Content-Type': contentType = tag['value']; id.avatarDataUri = `data:${contentType};base64,${decodedAvatarData}`; break;
+				case 'Content-Type': 
+					contentType = tag['value']; 
+					if(contentType==='image/gif' || contentType==='image/png' || contentType==='image/jpeg' ){
+						id.avatarDataUri = `data:${contentType};base64,${decodedAvatarData}`; 
+					}
+					break;
 				default:
 			}
 		}
@@ -65,7 +71,9 @@ export async function get(address: string, arweaveInstance: IArweave): Promise<A
 
 	return id;
 }
-
+/**
+ * The return type for 'set' function
+ */
 export interface ISetReturn {
 	txid: string
 	statusCode: number
@@ -93,11 +101,10 @@ export async function set(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveIn
 		// If dataURI format, check for optional media type or note unknown
 		case 'data':
 			// Example dataUri strings:
-			// data:image/jpeg;base64,/9j/2wCEAAMCAgMC...
+			// data:image/jpeg;base64,/9j/2wCEAAMCA...
 			// data:image/png;base64,iVBORw0KGgoAAA...
-			// data:image/svg+xml;base64,PHN2ZyB4bWxucz0i...
-			// data:image/svg+xml,<?xml version="1.0...><svg xmlns="http://www.w3.org/2000/s...><path d="M12,19.2C9.5,19.2 7.29,17.92...
-			avatarData = arweaveIdData.avatarDataUri.split(',').slice(1).join(',') //removes first array element of ',' split
+			// data:image/gif;base64,R0lGODlhEAAQAM...
+			avatarData = filterXSS( arweaveIdData.avatarDataUri.split(',').slice(1).join(',') ) //removes first array element of ',' split
 			let meta = arweaveIdData.avatarDataUri.split(',')[0]
 			if(meta.split(';')[1]){
 				console.log('base64 detected')
@@ -105,6 +112,9 @@ export async function set(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveIn
 				mediaType = meta.split(';')[0].split(':')[1]
 			}else{
 				mediaType = meta.split(':')[1]
+			}
+			if(mediaType!=='image/gif' && mediaType!=='image/png' && mediaType!=='image/jpeg' ){
+				return { txid:'', statusCode: 400, statusMessage: 'Invalid data URI'}
 			}
 			break;
 		// If URL is detected, throw error

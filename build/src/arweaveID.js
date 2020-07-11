@@ -7,8 +7,8 @@ exports.getIdenticon = exports.check = exports.set = exports.get = void 0;
 const identicon_js_1 = __importDefault(require("identicon.js"));
 const jshashes_1 = require("jshashes");
 const toUint8Array = require('base64-to-uint8array');
-const xss_1 = require("xss");
 const v1claimed_1 = __importDefault(require("./v1claimed"));
+const xss_1 = require("xss");
 /**
  * Function to get an ArweaveId object for the supplied arweave address.
  * @param address user's wallet address to look up
@@ -35,7 +35,7 @@ async function get(address, arweaveInstance) {
             }
         }
         let encodedAvatarData = await arweaveInstance.transactions.getData(nameTxn.id, { decode: true });
-        let decodedAvatarData = arweaveInstance.utils.bufferTob64(encodedAvatarData);
+        let decodedAvatarData = xss_1.filterXSS(arweaveInstance.utils.bufferTob64(encodedAvatarData));
         let contentType = '';
         for (var j = 0; j < nameTxn.tags.length; j++) {
             let tag = nameTxn.tags[j];
@@ -51,7 +51,9 @@ async function get(address, arweaveInstance) {
                     break;
                 case 'Content-Type':
                     contentType = tag['value'];
-                    id.avatarDataUri = `data:${contentType};base64,${decodedAvatarData}`;
+                    if (contentType === 'image/gif' || contentType === 'image/png' || contentType === 'image/jpeg') {
+                        id.avatarDataUri = `data:${contentType};base64,${decodedAvatarData}`;
+                    }
                     break;
                 default:
             }
@@ -90,11 +92,10 @@ async function set(arweaveIdData, jwk, arweaveInstance) {
         // If dataURI format, check for optional media type or note unknown
         case 'data':
             // Example dataUri strings:
-            // data:image/jpeg;base64,/9j/2wCEAAMCAgMC...
+            // data:image/jpeg;base64,/9j/2wCEAAMCA...
             // data:image/png;base64,iVBORw0KGgoAAA...
-            // data:image/svg+xml;base64,PHN2ZyB4bWxucz0i...
-            // data:image/svg+xml,<?xml version="1.0...><svg xmlns="http://www.w3.org/2000/s...><path d="M12,19.2C9.5,19.2 7.29,17.92...
-            avatarData = arweaveIdData.avatarDataUri.split(',').slice(1).join(','); //removes first array element of ',' split
+            // data:image/gif;base64,R0lGODlhEAAQAM...
+            avatarData = xss_1.filterXSS(arweaveIdData.avatarDataUri.split(',').slice(1).join(',')); //removes first array element of ',' split
             let meta = arweaveIdData.avatarDataUri.split(',')[0];
             if (meta.split(';')[1]) {
                 console.log('base64 detected');
@@ -103,6 +104,9 @@ async function set(arweaveIdData, jwk, arweaveInstance) {
             }
             else {
                 mediaType = meta.split(':')[1];
+            }
+            if (mediaType !== 'image/gif' && mediaType !== 'image/png' && mediaType !== 'image/jpeg') {
+                return { txid: '', statusCode: 400, statusMessage: 'Invalid data URI' };
             }
             break;
         // If URL is detected, throw error

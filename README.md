@@ -29,7 +29,7 @@ interface  ArweaveId {
   name: string     // username
   url?: string     // an optional http link for the user
   text?: string    // optional freeform text
-  avatarDataUri?: string    // optional data URI containing the user's avatar
+  avatarDataUri?: string    // optional data URI containing the user's avatar. Supports base64 'image/jpeg', 'image/png', and 'image/gif' 
 }
 ```
 
@@ -82,4 +82,4 @@ This function is provided as a method of generating an avatar for the user. Exam
 1. `name` - a string to generate an identicon for
 
 #### Returns
-A [data URI](https://en.wikipedia.org/wiki/Data_URI_scheme) containing the indenticon image. This can be directly set to an `img` tag's `src` property, for example. For reference, the enclosed image format is a base64 encoded PNG, of pixel size 64x64.
+A [data URI](https://en.wikipedia.org/wiki/Data_URI_scheme) containing the indenticon image. This can be directly set to an `img` tag's `src` property. For reference, the data URI format is a base64 encoded PNG, of dimensions 64x64 pixels.
