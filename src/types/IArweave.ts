@@ -42,12 +42,11 @@ interface TransactionInterface {
 	tags: Tag[];
 	target: string;
 	quantity: string;
-	data: string;
+	data: Uint8Array;
 	reward: string;
 	signature: string;
 	data_size: string;
 	data_root: string;
-	data_tree: string[];
 }
 interface BaseObject {
 	get(field: string): string
@@ -87,7 +86,9 @@ interface Transactions {
 	getData(id: string, options?: { decode?: boolean | undefined; string?: boolean | undefined; } | undefined): Promise<string | Uint8Array>
 	sign(transaction: Transaction, jwk: JWKInterface): Promise<void>
 	verify(transaction: Transaction): Promise<boolean>
-	post(transaction: string | object | Transaction | Buffer): Promise<AxiosResponse<any>>
+	post(
+		transaction: Transaction | Buffer | string | object
+	  ): Promise<{ status: number, statusText: string, data: any }> 
 }
 
 interface Wallets {
