@@ -165,7 +165,6 @@ exports.check = check;
 async function getArweaveIDTxnsForAddress(address, arweaveInstance) {
     var query = `query { transactions(from:["${address}"],tags: [{name:"App-Name", value:"arweave-id"}]) {id tags{name value}}}`;
     let res = await arweaveInstance.api.post('arql', { query: query });
-    console.log(res);
     return res.data.data.transactions;
 }
 /**

@@ -22,7 +22,7 @@
   "devDependencies": {
     "@types/jest": "^25.2.3",
     "@types/node": "^13.11.1",
-    "arweave": "^1.7.1",
+    "arweave": "^1.8.0",
     "gts": "^2.0.2",
     "jest": "^26.0.1",
     "ts-jest": "^26.1.0",
