@@ -1,5 +1,5 @@
 /**
- * Arweave interface based on Arweave class from arweave-js v1.7.1
+ * Arweave interface based on Arweave class from arweave-js v1.8.0
  */
 import { JWKInterface } from './JwkInterface';
 import { AxiosResponse, AxiosRequestConfig, AxiosInstance } from 'axios';

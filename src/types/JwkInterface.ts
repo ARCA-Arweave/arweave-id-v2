@@ -1,5 +1,5 @@
 /**
- * Based on types from arweave-js v1.7.1
+ * Based on types from arweave-js v1.8.0
  */
 
 export interface JWKPublicInterface {
