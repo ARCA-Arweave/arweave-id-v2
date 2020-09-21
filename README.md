@@ -1,4 +1,4 @@
-# arweave-id Version 2
+# Arweave ID Version 2
 
 This library serves an easy to use developer's interface to arweave-id. Arweave-id is an identity service for the permaweb a.k.a. Arweave open web.
 This library encapsulates, enforces, and abstracts away arweave-id rules, for example, to prevent name masquerading.

@@ -1,6 +1,6 @@
 {
   "name": "arweave-id",
-  "version": "2.0.7",
+  "version": "2.0.8",
   "description": "",
   "main": "build/src/index.js",
   "types": "build/src/index.d.ts",
@@ -18,6 +18,10 @@
     "prepare": "npm run compile",
     "pretest": "npm run compile",
     "run": "npx ts-node src/index.ts"
+  },
+  "repository": {
+    "type" : "git",
+    "url" : "https://github.com/ARCA-Arweave/arweave-id-v2.git"
   },
   "devDependencies": {
     "@types/jest": "^25.2.3",
