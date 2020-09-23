@@ -1,6 +1,6 @@
 import * as ArweaveID from './arweaveID'
 import Arweave from 'arweave/node'
-import jwk from './secrets/jwk.json'
+import jwk from '../test/secrets/jwk.json'
 
 const TEST_JWK_NAME = 'Testy Mc Testface' //you will need to update this for your own test wallet
 

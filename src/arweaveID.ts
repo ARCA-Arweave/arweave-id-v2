@@ -1,4 +1,4 @@
-import IArweave from './types/IArweave';
+import Arweave from 'arweave'
 import { JWKInterface } from './types/JwkInterface';
 import identicon from 'identicon.js';
 import { SHA256 } from 'jshashes';
@@ -19,7 +19,7 @@ export interface ArweaveId {
  * @param address user's wallet address to look up
  * @param arweaveInstance an instance of the Arweave object
  */
-export async function get(address: string, arweaveInstance: IArweave): Promise<ArweaveId> {
+export async function get(address: string, arweaveInstance: Arweave): Promise<ArweaveId> {
 	let transactions = await getArweaveIDTxnsForAddress(address, arweaveInstance);
 	if (transactions.length == 0)
 		return { name: '' };
@@ -85,7 +85,7 @@ export interface ISetReturn {
  * @param jwk the user's wallet to pay for the transaction
  * @param arweaveInstance an instance of the Arweave object
  */
-export async function set(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveInstance: IArweave): Promise<ISetReturn> {
+export async function set(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveInstance: Arweave): Promise<ISetReturn> {
 
 	/* Verify that submitted name is not already taken */
 	let signingAddress = await arweaveInstance.wallets.ownerToAddress(jwk.n);
@@ -162,7 +162,7 @@ export async function set(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveIn
  * @param name arweave-id name to search
  * @param arweaveInstance instance of arweave
  */
-export async function check(name: string, arweaveInstance: IArweave): Promise<string> {
+export async function check(name: string, arweaveInstance: Arweave): Promise<string> {
 	let _name = filterXSS(name)
 
 	if(v1claimed[_name] !== undefined){
@@ -181,7 +181,7 @@ export async function check(name: string, arweaveInstance: IArweave): Promise<st
 	return '';
 }
 
-async function getArweaveIDTxnsForAddress(address: string, arweaveInstance: IArweave): Promise<any[]> {
+async function getArweaveIDTxnsForAddress(address: string, arweaveInstance: Arweave): Promise<any[]> {
 	var query =
 		`query { transactions(from:["${address}"],tags: [{name:"App-Name", value:"arweave-id"}]) {id tags{name value}}}`;
 	let res = await arweaveInstance.api.post('arql', { query: query })

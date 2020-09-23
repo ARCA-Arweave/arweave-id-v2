@@ -1,0 +1,12 @@
+
+
+version 2.0.9
+- updated arweave 1.8.0 -> 1.9.1
+- cleaned up build/ & updated package.json refs
+- deleted IArweave, we can import Arweave as the node/web import feature has been fixed now.
+- updated arweaveInstance refs
+- fixed build issues
+
+===========================
+"version": "2.0.8" and lower
+- no CHANGELOG.txt
