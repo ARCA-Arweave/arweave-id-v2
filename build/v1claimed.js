@@ -1,6 +1,6 @@
 "use strict";
-exports.__esModule = true;
-exports["default"] = {
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.default = {
     '1': '9BWuEYSV-81HDqnICg_xpl2_zOoMn7mZKnn0pQz1-xU',
     '666': 'MgF0nCd36Jfz9jWhqG_9bxme0NCV_H3kGf0eK3rdM8Y',
     whoami: 'e4G1p1SRuZq3pLZi0lqZgSBRotKIGvlVDk4-bn_NkMQ',
