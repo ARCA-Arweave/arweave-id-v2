@@ -12,7 +12,7 @@ For more information about Arweave see https://arweave.org
 Install using `npm install arweave-id` then do
 
 ```javascript
-import Arweave from 'arweave/web'
+import Arweave from 'arweave'
 import { get } from 'arweave-id'
 
 const arweave = Arweave.init({})
