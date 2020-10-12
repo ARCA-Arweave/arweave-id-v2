@@ -28,48 +28,54 @@ export async function get(address: string, arweaveInstance: Arweave): Promise<Ar
 	let v2Txns = transactions.filter(txn => txn.tags.filter(tag => tag['value'] === '0.0.2').length > 0);
 	let v1Txns = transactions.filter(txn => txn.tags.filter(tag => tag['value'] === '0.0.1').length > 0);
 
-	// If a V2 ID is found, populate the ArweaveID tags based on the v2 transaction
-	if (v2Txns.length > 0) {
-		let nameTxn = v2Txns[0];
-		// Find correct ArweaveID based on getAddressFromArweaveID rules
-		for (var j = 1; j < v2Txns.length; j++) {
-			if (address != await check(nameTxn.tags.filter(tag => tag['name'] == 'Name')[0]['value'], arweaveInstance)) {
-				nameTxn = v2Txns[j]; //Work backwards through the list of name transactions to exclude any made for a name already owned by another address
-			}
-			else {
-				console.log(`name transaction == ${nameTxn.id}`);
-				break;
-			}
-		}
-		let encodedAvatarData = await arweaveInstance.transactions.getData(nameTxn.id, {decode: true}) as Uint8Array;
-		let decodedAvatarData = filterXSS( arweaveInstance.utils.bufferTob64(encodedAvatarData) )
-		let contentType = ''
-		for (var j = 0; j < nameTxn.tags.length; j++) {
-			let tag = nameTxn.tags[j]
-			switch (tag['name']) {
-				case 'Name': id.name = filterXSS(tag['value']); break;
-				case 'Url': id.url = filterXSS(tag['value']); break;
-				case 'Text': id.text = filterXSS(tag['value']); break;
-				case 'Content-Type': 
-					contentType = tag['value']; 
-					if(contentType==='image/gif' || contentType==='image/png' || contentType==='image/jpeg' ){
-						id.avatarDataUri = `data:${contentType};base64,${decodedAvatarData}`; 
-					}
+	try {
+		// If a V2 ID is found, populate the ArweaveID tags based on the v2 transaction
+		if (v2Txns.length > 0) {
+			let nameTxn = v2Txns[0];
+			// Find correct ArweaveID based on getAddressFromArweaveID rules
+			for (var j = 1; j < v2Txns.length; j++) {
+				if (address != await check(nameTxn.tags.filter(tag => tag['name'] == 'Name')[0]['value'], arweaveInstance)) {
+					nameTxn = v2Txns[j]; //Work backwards through the list of name transactions to exclude any made for a name already owned by another address
+				}
+				else {
+					console.log(`name transaction == ${nameTxn.id}`);
 					break;
-				default:
+				}
 			}
+			let encodedAvatarData = await arweaveInstance.transactions.getData(nameTxn.id, { decode: true }) as Uint8Array;
+			let decodedAvatarData = filterXSS(arweaveInstance.utils.bufferTob64(encodedAvatarData))
+			let contentType = ''
+			for (var j = 0; j < nameTxn.tags.length; j++) {
+				let tag = nameTxn.tags[j]
+				switch (tag['name']) {
+					case 'Name': id.name = filterXSS(tag['value']); break;
+					case 'Url': id.url = filterXSS(tag['value']); break;
+					case 'Text': id.text = filterXSS(tag['value']); break;
+					case 'Content-Type':
+						contentType = tag['value'];
+						if (contentType === 'image/gif' || contentType === 'image/png' || contentType === 'image/jpeg') {
+							id.avatarDataUri = `data:${contentType};base64,${decodedAvatarData}`;
+						}
+						break;
+					default:
+				}
+			}
+
+		} else { //If no V2 ID is found, find the most recent V1 name transaction
+			let v1NameTxns = v1Txns.filter(txn => txn.tags.filter(tag => tag['value'] === 'name').length > 0);
+			if (v1NameTxns.length > 0) {
+				id.name = await arweaveInstance.transactions.getData(v1NameTxns[0].id as string, { decode: true, string: true }) as string;
+			}
+			// If no name field set, set name equal to Arweave address as default
+			else id.name = address;
 		}
 
-	} else { //If no V2 ID is found, find the most recent V1 name transaction
-		let v1NameTxns = v1Txns.filter(txn => txn.tags.filter(tag => tag['value'] === 'name').length > 0);
-		if (v1NameTxns.length > 0) {
-			id.name = await arweaveInstance.transactions.getData(v1NameTxns[0].id as string, { decode: true, string: true }) as string;
-		}
-		// If no name field set, set name equal to Arweave address as default
-		else id.name = address;
+		return id;
 	}
-
-	return id;
+	catch (err) {
+		console.log('Error occurred while processing name transactions')
+		return { name: '' };
+	}
 }
 /**
  * The return type for 'set' function
@@ -90,10 +96,10 @@ export async function set(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveIn
 	/* Verify that submitted name is not already taken */
 	let signingAddress = await arweaveInstance.wallets.ownerToAddress(jwk.n);
 	let idOwnerAddress = await check(arweaveIdData.name, arweaveInstance);
-	if ((idOwnerAddress !== '') && (idOwnerAddress !==signingAddress )){
-		return { txid: '', statusCode: 400, statusMessage: 'Name already taken'}
+	if ((idOwnerAddress !== '') && (idOwnerAddress !== signingAddress)) {
+		return { txid: '', statusCode: 400, statusMessage: 'Name already taken' }
 	}
-	
+
 	/* Handle the dataUri string */
 	var mediaType: string = ''
 	var avatarData: string
@@ -104,17 +110,17 @@ export async function set(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveIn
 			// data:image/jpeg;base64,/9j/2wCEAAMCA...
 			// data:image/png;base64,iVBORw0KGgoAAA...
 			// data:image/gif;base64,R0lGODlhEAAQAM...
-			avatarData = filterXSS( arweaveIdData.avatarDataUri.split(',').slice(1).join(',') ) //removes first array element of ',' split
+			avatarData = filterXSS(arweaveIdData.avatarDataUri.split(',').slice(1).join(',')) //removes first array element of ',' split
 			let meta = arweaveIdData.avatarDataUri.split(',')[0]
-			if(meta.split(';')[1]){
+			if (meta.split(';')[1]) {
 				console.log('base64 detected')
 				avatarData = toUint8Array(avatarData); //if base64 convert to binary using toUnit8Array(base64string)
 				mediaType = meta.split(';')[0].split(':')[1]
-			}else{
+			} else {
 				mediaType = meta.split(':')[1]
 			}
-			if(mediaType!=='image/gif' && mediaType!=='image/png' && mediaType!=='image/jpeg' ){
-				return { txid:'', statusCode: 400, statusMessage: 'Invalid data URI'}
+			if (mediaType !== 'image/gif' && mediaType !== 'image/png' && mediaType !== 'image/jpeg') {
+				return { txid: '', statusCode: 400, statusMessage: 'Invalid data URI' }
 			}
 			break;
 		// If URL is detected, throw error
@@ -143,7 +149,7 @@ export async function set(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveIn
 	if ((arweaveIdData.url !== undefined) && (arweaveIdData.url !== '')) {
 		transaction.addTag('Url', filterXSS(arweaveIdData.url));
 	}
-	mediaType.length===0 ? mediaType = 'none' : transaction.addTag('Content-Type', mediaType);
+	mediaType.length === 0 ? mediaType = 'none' : transaction.addTag('Content-Type', mediaType);
 	console.log('Media Type is ' + mediaType);
 
 	await arweaveInstance.transactions.sign(transaction, jwk);
@@ -165,7 +171,7 @@ export async function set(arweaveIdData: ArweaveId, jwk: JWKInterface, arweaveIn
 export async function check(name: string, arweaveInstance: Arweave): Promise<string> {
 	let _name = filterXSS(name)
 
-	if(v1claimed[_name] !== undefined){
+	if (v1claimed[_name] !== undefined) {
 		return v1claimed[_name]
 	}
 
@@ -184,8 +190,12 @@ export async function check(name: string, arweaveInstance: Arweave): Promise<str
 async function getArweaveIDTxnsForAddress(address: string, arweaveInstance: Arweave): Promise<any[]> {
 	var query =
 		`query { transactions(from:["${address}"],tags: [{name:"App-Name", value:"arweave-id"}]) {id tags{name value}}}`;
+	console.log(`query for retrieving Arweave ID transactions is: ${query}`)
+
+	//Filter out invalid transactions that Graphql sometimes sends
 	let res = await arweaveInstance.api.post('arql', { query: query })
-	return res.data.data.transactions;
+	let txns = res.data.data.transactions.filter((txn) => txn.tags.filter((tag) => tag['value'] === 'arweave-id').length > 0)
+	return txns;
 }
 
 /**

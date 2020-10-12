@@ -1,6 +1,6 @@
 import * as ArweaveID from './arweaveID'
 import Arweave from 'arweave/node'
-import jwk from '../test/secrets/jwk.json'
+//import jwk from '../test/secrets/jwk.json'
 
 const TEST_JWK_NAME = 'Testy Mc Testface' //you will need to update this for your own test wallet
 
@@ -37,6 +37,13 @@ describe('Test arweaveID.ts functions',()=>{
 		let res: ArweaveID.ArweaveId = await ArweaveID.get('CvbdmU66JFe5D14j2wYZEFSfO1hZY8dZy4W-9Ev2q0Y', arweave)
 
 		expect(res).toEqual({ "name": 'sparrow' })
+	}, 20000)
+	it('get gets a wallet\'s address with only a V1 txn ID with an email value set where graphQL returns invalid results', async () => {
+		expect(1)
+
+		let res: ArweaveID.ArweaveId = await ArweaveID.get('h-Bgr13OWUOkRGWrnMT0LuUKfJhRss5pfTdxHmNcXyw', arweave)
+
+		expect(res).toEqual({ "name": 'h-Bgr13OWUOkRGWrnMT0LuUKfJhRss5pfTdxHmNcXyw' })
 	}, 20000)
 
 	/* Test 'set' function */

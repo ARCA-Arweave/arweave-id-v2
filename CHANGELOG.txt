@@ -1,4 +1,6 @@
 
+version 2.0.10
+- filter out invalid transactions returned by graphql for some wallets in `get` 
 
 version 2.0.9
 - updated arweave 1.8.0 -> 1.9.1
