@@ -34,7 +34,7 @@
   },
   "dependencies": {
     "@types/identicon.js": "^2.3.0",
-    "axios": "^0.18.0",
+    "axios": "^0.21.1",
     "base64-to-uint8array": "^1.0.0",
     "identicon.js": "^2.3.3",
     "jshashes": "^1.0.8",
