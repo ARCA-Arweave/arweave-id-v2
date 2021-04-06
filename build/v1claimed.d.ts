@@ -1,6 +1,6 @@
 declare const _default: {
-    1: string;
-    666: string;
+    '1': string;
+    '666': string;
     whoami: string;
     JoshuaHudson: string;
     CDDelta: string;
